@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use between_wgpu::RenderState;
+use between_wgpu::gpu::RenderState;
 
 use winit::{
     application::ApplicationHandler,
