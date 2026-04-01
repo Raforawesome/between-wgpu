@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use between_wgpu::gpu::RenderState;
+use between_wgpu::render::RenderState;
 
 use winit::{
     application::ApplicationHandler,
     event::{KeyEvent, WindowEvent},
     event_loop::{ActiveEventLoop, EventLoop},
-    keyboard::{KeyCode, PhysicalKey},
+    keyboard::PhysicalKey,
     window::{Window, WindowId},
 };
 
