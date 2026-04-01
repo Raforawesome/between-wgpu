@@ -1,5 +1,5 @@
-use std::sync::Arc;
 use anyhow::bail;
+use std::sync::Arc;
 use wgpu::{Instance, InstanceDescriptor};
 use winit::window::Window;
 
@@ -34,7 +34,7 @@ impl Gpu {
                 force_fallback_adapter: false,
             })
             .await
-            .ok_or_else(|| anyhow::anyhow!("Failed to find adapter"))?;
+            .map_err(|_| anyhow::anyhow!("Failed to find adapter"))?;
 
         // here we can select a list of required features and change memory
         // allocation strategies.
