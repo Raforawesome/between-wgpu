@@ -18,14 +18,19 @@ const VERTICES: [Vertex; 5] = [
     Vertex::from_arrays([0.44147372, 0.2347359, 0.0], [0.5, 0.0, 0.5]),  // E
 ];
 
+/// Handles setting up a renderer with [wgpu]. Contains an abstraction for the GPU device.
 pub struct RenderState {
+    /// Abstraction for the physical GPU device which handles interfacing and surfaces.
     gpu: Gpu,
     is_surface_configured: bool,
+    /// The render pipeline contains the buffers, shaders, and post-processing stages.
     render_pipeline: wgpu::RenderPipeline,
+    /// Stores a list of vertices to pass to the GPU.
     vertex_buffer: wgpu::Buffer,
 }
 
 impl RenderState {
+    /// Creates the render state using the gpu device.
     pub async fn new(window: Arc<Window>) -> anyhow::Result<Self> {
         let gpu = Gpu::new(window).await?;
 
