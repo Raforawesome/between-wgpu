@@ -18,12 +18,23 @@ impl Vertex {
         let position = position.into();
         let color = color.into();
 
-        Self { position, colour }
+        Self { position, color }
+    }
+
+    /// Uses [std::mem::transmute] to form a [Vertex] struct with arrays of floats.
+    /// This allows the method to be `const`. This method is not marked as unsafe since
+    /// the use of transmute is safe, as [Vec3] is marked with `#[repr(C)]`.
+    pub const fn from_arrays(position: [f32; 3], color: [f32; 3]) -> Self {
+        Self {
+            position: unsafe { mem::transmute::<[f32; 3], Vec3>(position) },
+            color: unsafe { mem::transmute::<[f32; 3], Vec3>(color) },
+        }
     }
 }
 
 impl Vertex {
-    pub fn desc() -> VertexBufferLayout<'static> {
+    /// Returns a `VertexBufferLayout` description for the vertex format.
+    pub const fn buffer_layout() -> VertexBufferLayout<'static> {
         VertexBufferLayout {
             array_stride: mem::size_of::<Vertex>() as wgpu::BufferAddress,
             step_mode: VertexStepMode::Vertex,
@@ -34,7 +45,7 @@ impl Vertex {
                     shader_location: 0,
                     format: VertexFormat::Float32x3,
                 },
-                // attribute descriptor for colour (field 1)
+                // attribute descriptor for color (field 1)
                 wgpu::VertexAttribute {
                     offset: mem::size_of::<Vec3>() as wgpu::BufferAddress,
                     shader_location: 1,
