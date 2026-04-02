@@ -6,15 +6,17 @@ use wgpu::{VertexBufferLayout, VertexFormat, VertexStepMode};
 
 #[derive(Pod, Zeroable, Copy, Clone)]
 #[repr(C)]
+/// This Vertex struct represents the unit of data given to each instance of
+/// a vertex shader.
 pub struct Vertex {
     pub position: Vec3,
-    pub colour: Vec3,
+    pub color: Vec3,
 }
 
 impl Vertex {
-    pub fn new(position: impl Into<Vec3>, colour: impl Into<Vec3>) -> Self {
+    pub fn new(position: impl Into<Vec3>, color: impl Into<Vec3>) -> Self {
         let position = position.into();
-        let colour = colour.into();
+        let color = color.into();
 
         Self { position, colour }
     }
