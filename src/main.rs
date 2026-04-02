@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use between_wgpu::render::RenderState;
 
+use thread_priority::set_current_thread_priority;
 use winit::{
     application::ApplicationHandler,
     event::{KeyEvent, WindowEvent},
@@ -70,6 +71,10 @@ impl ApplicationHandler<RenderState> for App {
 
 fn main() -> anyhow::Result<()> {
     env_logger::init();
+
+    if set_current_thread_priority(thread_priority::ThreadPriority::Max).is_err() {
+        println!("Error: failed to set current main priority");
+    }
 
     let event_loop = EventLoop::with_user_event().build()?;
     let mut app = App::default();
