@@ -4,8 +4,7 @@ pub mod vertex;
 use gpu::Gpu;
 use vertex::Vertex;
 
-use glam::Vec3;
-use wgpu::util::DeviceExt as _;
+use wgpu::{PipelineCompilationOptions, util::DeviceExt as _};
 use winit::{event_loop::ActiveEventLoop, keyboard::KeyCode, window::Window};
 
 use std::sync::Arc;
@@ -18,6 +17,12 @@ const VERTICES: [Vertex; 5] = [
     Vertex::from_arrays([0.44147372, 0.2347359, 0.0], [0.5, 0.0, 0.5]),  // E
 ];
 
+const INDICES: [u16; 9] = [
+    0, 1, 4, //
+    1, 2, 4, //
+    2, 3, 4, //
+];
+
 /// Handles setting up a renderer with [wgpu]. Contains an abstraction for the GPU device.
 pub struct RenderState {
     /// Abstraction for the physical GPU device which handles interfacing and surfaces.
@@ -27,6 +32,10 @@ pub struct RenderState {
     render_pipeline: wgpu::RenderPipeline,
     /// Stores a list of vertices to pass to the GPU.
     vertex_buffer: wgpu::Buffer,
+    /// Stores a list of vertex indices to draw. Each pair of 3 represents one triangle.
+    index_buffer: wgpu::Buffer,
+    /// Bind group for the diffuse texture array and sampler.
+    diffuse_bind_group: wgpu::BindGroup,
 }
 
 impl RenderState {
@@ -55,8 +64,8 @@ impl RenderState {
                 vertex: wgpu::VertexState {
                     module: &shader,
                     entry_point: Some("vs_main"),
-                    buffers: &[],
-                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                    buffers: &[Vertex::buffer_layout()],
+                    compilation_options: PipelineCompilationOptions::default(),
                 },
                 // set up fragment shader entry point
                 fragment: Some(wgpu::FragmentState {
@@ -67,7 +76,7 @@ impl RenderState {
                         blend: Some(wgpu::BlendState::REPLACE),
                         write_mask: wgpu::ColorWrites::ALL,
                     })],
-                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                    compilation_options: PipelineCompilationOptions::default(),
                 }),
                 // define how vertex data is interpreted
                 primitive: wgpu::PrimitiveState {
@@ -98,11 +107,21 @@ impl RenderState {
                 usage: wgpu::BufferUsages::VERTEX,
             });
 
+        let index_buffer = gpu
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("between index buffer"),
+                contents: bytemuck::cast_slice(&INDICES),
+                usage: wgpu::BufferUsages::INDEX,
+            });
+
         Ok(Self {
             gpu,
             is_surface_configured: false,
             render_pipeline,
             vertex_buffer,
+            index_buffer,
+            diffuse_bind_group,
         })
     }
 
@@ -164,7 +183,12 @@ impl RenderState {
             });
 
             render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.draw(0..3, 0..1); // draw something with 3 vertices and 1 instance
+            render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
+            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+
+            let idx_count = INDICES.len() as u32;
+            render_pass.draw_indexed(0..idx_count, 0, 0..1);
         }
 
         self.gpu.queue.submit([encoder.finish()]);
