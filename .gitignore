@@ -1,3 +1,9 @@
 /target
 assets/*
+
+# slang shaders will be compiled to wgsl upon build script running
 *.wgsl
+
+# apple please make a REAL OS THAT DOESNT INJECT HIDDEN FILES EVERYWHERE
+.DS_Store
+**/.DS_Store
