@@ -40,8 +40,8 @@ impl Camera {
         // It's essentially an inverse of whatever the transform matrix of the camera would be.
         let view = Mat4::look_at_rh(self.eye, self.target, self.up);
 
-        // The proj matrix warps the scene to give the effect of depth. Without this, objects
-        // up close would be the same size as objects far away.
+        // The projection matrix warps the scene to give the effect of depth. Without this,
+        // objects up close would be the same size as objects far away.
         let proj = Mat4::perspective_rh(self.fovy, self.aspect, self.znear, self.zfar);
 
         // we return proj * view because the model -> view -> projection transformations apply

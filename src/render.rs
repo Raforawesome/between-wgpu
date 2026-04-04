@@ -59,7 +59,7 @@ impl RenderState {
 
         // set up camera & camera bind group (creates camera buffer)
         let camera = Camera::new(
-            (0., 0., 0.),
+            (0., 1., 2.),
             (0., 0., 0.),
             gpu.config.width as f32 / gpu.config.height as f32,
         );
