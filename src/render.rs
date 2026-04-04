@@ -45,6 +45,8 @@ pub struct RenderState {
     cam_buffer: wgpu::Buffer,
     /// Bind group for the camera matrix.
     cam_bind_group: wgpu::BindGroup,
+    /// Stores a texture to sample a pixel's 3D depth.
+    depth_texture: Texture,
 }
 
 impl RenderState {
@@ -79,6 +81,7 @@ impl RenderState {
                 immediate_size: 0,
             });
 
+        let depth_texture = Texture::create_depth_texture(&gpu);
         let render_pipeline = gpu
             .device
             .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -113,7 +116,13 @@ impl RenderState {
                     conservative: false,
                 },
                 // z-buffer
-                depth_stencil: None,
+                depth_stencil: Some(wgpu::DepthStencilState {
+                    format: Texture::DEPTH_FORMAT,
+                    depth_write_enabled: Some(true),
+                    depth_compare: Some(wgpu::CompareFunction::Less),
+                    stencil: wgpu::StencilState::default(),
+                    bias: wgpu::DepthBiasState::default(),
+                }),
                 multisample: wgpu::MultisampleState {
                     count: 1,
                     mask: !0,
@@ -149,6 +158,7 @@ impl RenderState {
             diffuse_bind_group,
             cam_buffer,
             cam_bind_group,
+            depth_texture,
         })
     }
 
@@ -206,7 +216,14 @@ impl RenderState {
                         store: wgpu::StoreOp::Store,
                     },
                 })],
-                depth_stencil_attachment: None,
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &self.depth_texture.view,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(1.0),
+                        store: wgpu::StoreOp::Store,
+                    }),
+                    stencil_ops: None,
+                }),
                 timestamp_writes: None,
                 occlusion_query_set: None,
                 multiview_mask: None,
