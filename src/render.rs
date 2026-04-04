@@ -13,9 +13,9 @@ use std::sync::Arc;
 
 const VERTICES: [Vertex; 4] = [
     Vertex::from_arrays([-0.5, 0.5, 0.0], [0.0, 0.0]), // Top Left
-    Vertex::from_arrays([0.5, 0.5, 0.0], [1.0, 0.0]),  // Top Right
     Vertex::from_arrays([-0.5, -0.5, 0.0], [0.0, 1.0]), // Bottom Left
     Vertex::from_arrays([0.5, -0.5, 0.0], [1.0, 1.0]), // Bottom Right
+    Vertex::from_arrays([0.5, 0.5, 0.0], [1.0, 0.0]),  // Top Right
 ];
 
 const INDICES: [u16; 6] = [
