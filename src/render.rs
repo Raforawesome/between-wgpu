@@ -1,3 +1,4 @@
+pub mod camera;
 pub mod gpu;
 pub mod texture;
 pub mod vertex;
@@ -6,10 +7,12 @@ use gpu::Gpu;
 use texture::Texture;
 use vertex::Vertex;
 
-use wgpu::{PipelineCompilationOptions, util::DeviceExt as _};
+use wgpu::{BufferUsages, PipelineCompilationOptions, util::DeviceExt as _};
 use winit::{event_loop::ActiveEventLoop, keyboard::KeyCode, window::Window};
 
 use std::sync::Arc;
+
+use crate::render::camera::Camera;
 
 const VERTICES: [Vertex; 4] = [
     Vertex::from_arrays([-0.5, 0.5, 0.0], [0.0, 0.0]), // Top Left
@@ -25,9 +28,9 @@ const INDICES: [u16; 6] = [
 
 /// Handles setting up a renderer with [wgpu]. Contains an abstraction for the GPU device.
 pub struct RenderState {
+    is_surface_configured: bool,
     /// Abstraction for the physical GPU device which handles interfacing and surfaces.
     gpu: Gpu,
-    is_surface_configured: bool,
     /// The render pipeline contains the buffers, shaders, and post-processing stages.
     render_pipeline: wgpu::RenderPipeline,
     /// Stores a list of vertices to pass to the GPU.
@@ -36,6 +39,12 @@ pub struct RenderState {
     index_buffer: wgpu::Buffer,
     /// Bind group for the diffuse texture array and sampler.
     diffuse_bind_group: wgpu::BindGroup,
+    /// Camera for the scene.
+    camera: Camera,
+    /// Buffer for the camera matrix.
+    cam_buffer: wgpu::Buffer,
+    /// Bind group for the camera matrix.
+    cam_bind_group: wgpu::BindGroup,
 }
 
 impl RenderState {
@@ -43,55 +52,20 @@ impl RenderState {
     pub async fn new(window: Arc<Window>) -> anyhow::Result<Self> {
         let gpu = Gpu::new(window).await?;
 
-        // load textures into array
-        let diffuse_bytes_grass = include_bytes!("../assets/mc_grass_side.png");
-        let diffuse_bytes_stone = include_bytes!("../assets/mc_stone.png");
-        let texture_array = Texture::from_bytes_array(
-            &gpu.device,
-            &gpu.queue,
-            &[diffuse_bytes_grass, diffuse_bytes_stone],
-            Some("Block Texture Array"),
-        )?;
+        // set up texture array & texture bind group
+        let texture_array = Texture::create_texture_array(&gpu);
+        let tex_group_layout = gpu.device.create_bind_group_layout(&Texture::layout_desc());
+        let diffuse_bind_group = gpu.create_texture_bind_group(&texture_array, &tex_group_layout);
 
-        let texture_bind_group_layout =
-            gpu.device
-                .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                    entries: &[
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 0,
-                            visibility: wgpu::ShaderStages::FRAGMENT,
-                            ty: wgpu::BindingType::Texture {
-                                multisampled: false,
-                                view_dimension: wgpu::TextureViewDimension::D2Array,
-                                sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                            },
-                            count: None,
-                        },
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 1,
-                            visibility: wgpu::ShaderStages::FRAGMENT,
-                            // this should match the filterable field of the corresponding Texture entry above.
-                            ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                            count: None,
-                        },
-                    ],
-                    label: Some("texture_bind_group_layout"),
-                });
-
-        let diffuse_bind_group = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &texture_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&texture_array.view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&texture_array.sampler),
-                },
-            ],
-            label: Some("diffuse_bind_group"),
-        });
+        // set up camera & camera bind group (creates camera buffer)
+        let camera = Camera::new(
+            (0., 0., 0.),
+            (0., 0., 0.),
+            gpu.config.width as f32 / gpu.config.height as f32,
+        );
+        let cam_buffer = gpu.create_camera_buffer(&camera);
+        let cam_group_layout = gpu.device.create_bind_group_layout(&Camera::layout_desc());
+        let cam_bind_group = gpu.create_camera_bind_group(&cam_buffer, &cam_group_layout);
 
         // set up the render pipeline
         let shader = gpu
@@ -101,7 +75,7 @@ impl RenderState {
             .device
             .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("between render pipeline layout"),
-                bind_group_layouts: &[Some(&texture_bind_group_layout)],
+                bind_group_layouts: &[Some(&tex_group_layout), Some(&cam_group_layout)],
                 immediate_size: 0,
             });
 
@@ -154,7 +128,7 @@ impl RenderState {
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("between vertex buffer"),
                 contents: bytemuck::cast_slice(&VERTICES),
-                usage: wgpu::BufferUsages::VERTEX,
+                usage: BufferUsages::VERTEX,
             });
 
         let index_buffer = gpu
@@ -162,16 +136,19 @@ impl RenderState {
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("between index buffer"),
                 contents: bytemuck::cast_slice(&INDICES),
-                usage: wgpu::BufferUsages::INDEX,
+                usage: BufferUsages::INDEX,
             });
 
         Ok(Self {
-            gpu,
             is_surface_configured: false,
+            camera,
+            gpu,
             render_pipeline,
             vertex_buffer,
             index_buffer,
             diffuse_bind_group,
+            cam_buffer,
+            cam_bind_group,
         })
     }
 
@@ -181,6 +158,7 @@ impl RenderState {
     }
 
     pub fn handle_key(&mut self, event_loop: &ActiveEventLoop, key: KeyCode, is_pressed: bool) {
+        #[allow(clippy::single_match)]
         match (key, is_pressed) {
             (KeyCode::Escape, true) => event_loop.exit(),
             _ => {}
@@ -233,7 +211,10 @@ impl RenderState {
             });
 
             render_pass.set_pipeline(&self.render_pipeline);
+
             render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
+            render_pass.set_bind_group(1, &self.cam_bind_group, &[]);
+
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
 
