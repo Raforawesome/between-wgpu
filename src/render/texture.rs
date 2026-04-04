@@ -1,5 +1,8 @@
 use anyhow::*;
 use image::GenericImageView;
+use wgpu::{BindGroupEntry, BindGroupLayoutEntry, BindingResource, BindingType};
+
+use crate::render::gpu::Gpu;
 
 pub struct Texture {
     pub texture: wgpu::Texture,
@@ -8,6 +11,22 @@ pub struct Texture {
 }
 
 impl Texture {
+    /// Convenience method to create the default texture array for the game
+    pub fn create_texture_array(gpu: &Gpu) -> Self {
+        let diffuse_bytes_grass = include_bytes!("../../assets/mc_grass_side.png");
+        let diffuse_bytes_stone = include_bytes!("../../assets/mc_stone.png");
+
+        Self::from_bytes_array(
+            &gpu.device,
+            &gpu.queue,
+            &[diffuse_bytes_grass, diffuse_bytes_stone],
+            Some("Block Texture Array"),
+        )
+        .expect("valid texture array")
+    }
+
+    /// Creates a 3D texture which consists of a series of 2D textures,
+    /// sorted by the z coordinate.
     pub fn from_bytes_array(
         device: &wgpu::Device,
         queue: &wgpu::Queue,
@@ -89,6 +108,66 @@ impl Texture {
             texture: diffuse_tex,
             view,
             sampler,
+        })
+    }
+
+    /*
+     * These methods help reduce the wgpu boilerplate around setting up the bind group
+     * for game textures.
+     */
+    /// Returns the layout descriptor for the texture bind group.
+    pub const fn layout_desc() -> wgpu::BindGroupLayoutDescriptor<'static> {
+        wgpu::BindGroupLayoutDescriptor {
+            entries: &[
+                BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2Array,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    },
+                    count: None,
+                },
+                BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    // this should match the filterable field of the corresponding Texture entry above.
+                    ty: BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+            ],
+            label: Some("texture_bind_group_layout"),
+        }
+    }
+
+    /// Creates bind group entries for a texture struct.
+    pub const fn bind_entries<'a>(&'a self) -> [BindGroupEntry<'a>; 2] {
+        [
+            BindGroupEntry {
+                binding: 0,
+                resource: BindingResource::TextureView(&self.view),
+            },
+            BindGroupEntry {
+                binding: 1,
+                resource: BindingResource::Sampler(&self.sampler),
+            },
+        ]
+    }
+}
+
+impl Gpu {
+    pub fn create_texture_bind_group(
+        &self,
+        texture: &Texture,
+        layout: &wgpu::BindGroupLayout,
+    ) -> wgpu::BindGroup {
+        let device = &self.device;
+
+        device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout,
+            entries: &texture.bind_entries(),
+            label: Some("diffuse_bind_group"),
         })
     }
 }
