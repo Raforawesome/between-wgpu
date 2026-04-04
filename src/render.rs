@@ -11,18 +11,16 @@ use winit::{event_loop::ActiveEventLoop, keyboard::KeyCode, window::Window};
 
 use std::sync::Arc;
 
-const VERTICES: [Vertex; 5] = [
-    Vertex::from_arrays([-0.0868241, 0.49240386, 0.0], [0.5, 0.0]), // A
-    Vertex::from_arrays([-0.49513406, 0.06958647, 0.0], [0.0, 0.5]), // B
-    Vertex::from_arrays([-0.21918549, -0.44939706, 0.0], [0.0, 1.0]), // C
-    Vertex::from_arrays([0.35966998, -0.3473291, 0.0], [1.0, 1.0]), // D
-    Vertex::from_arrays([0.44147372, 0.2347359, 0.0], [1.0, 0.0]),  // E
+const VERTICES: [Vertex; 4] = [
+    Vertex::from_arrays([-0.5, 0.5, 0.0], [0.0, 0.0]), // Top Left
+    Vertex::from_arrays([0.5, 0.5, 0.0], [1.0, 0.0]),  // Top Right
+    Vertex::from_arrays([-0.5, -0.5, 0.0], [0.0, 1.0]), // Bottom Left
+    Vertex::from_arrays([0.5, -0.5, 0.0], [1.0, 1.0]), // Bottom Right
 ];
 
-const INDICES: [u16; 9] = [
-    0, 1, 4, //
-    1, 2, 4, //
-    2, 3, 4, //
+const INDICES: [u16; 6] = [
+    0, 1, 2, // Triangle 1
+    0, 2, 3, // Triangle 2
 ];
 
 /// Handles setting up a renderer with [wgpu]. Contains an abstraction for the GPU device.
