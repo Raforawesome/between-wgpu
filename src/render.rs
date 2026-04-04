@@ -1,7 +1,9 @@
 pub mod gpu;
+pub mod texture;
 pub mod vertex;
 
 use gpu::Gpu;
+use texture::Texture;
 use vertex::Vertex;
 
 use wgpu::{PipelineCompilationOptions, util::DeviceExt as _};
@@ -43,6 +45,56 @@ impl RenderState {
     pub async fn new(window: Arc<Window>) -> anyhow::Result<Self> {
         let gpu = Gpu::new(window).await?;
 
+        // load textures into array
+        let diffuse_bytes_grass = include_bytes!("../assets/mc_grass_side.png");
+        let diffuse_bytes_stone = include_bytes!("../assets/mc_stone.png");
+        let texture_array = Texture::from_bytes_array(
+            &gpu.device,
+            &gpu.queue,
+            &[diffuse_bytes_grass, diffuse_bytes_stone],
+            Some("Block Texture Array"),
+        )?;
+
+        let texture_bind_group_layout =
+            gpu.device
+                .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                    entries: &[
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 0,
+                            visibility: wgpu::ShaderStages::FRAGMENT,
+                            ty: wgpu::BindingType::Texture {
+                                multisampled: false,
+                                view_dimension: wgpu::TextureViewDimension::D2Array,
+                                sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            },
+                            count: None,
+                        },
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 1,
+                            visibility: wgpu::ShaderStages::FRAGMENT,
+                            // this should match the filterable field of the corresponding Texture entry above.
+                            ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                            count: None,
+                        },
+                    ],
+                    label: Some("texture_bind_group_layout"),
+                });
+
+        let diffuse_bind_group = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &texture_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&texture_array.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&texture_array.sampler),
+                },
+            ],
+            label: Some("diffuse_bind_group"),
+        });
+
         // set up the render pipeline
         let shader = gpu
             .device
@@ -51,7 +103,7 @@ impl RenderState {
             .device
             .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("between render pipeline layout"),
-                bind_group_layouts: &[],
+                bind_group_layouts: &[Some(&texture_bind_group_layout)],
                 immediate_size: 0,
             });
 
