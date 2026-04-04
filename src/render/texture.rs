@@ -13,13 +13,13 @@ pub struct Texture {
 impl Texture {
     /// Convenience method to create the default texture array for the game
     pub fn create_texture_array(gpu: &Gpu) -> Self {
-        let diffuse_bytes_grass = include_bytes!("../../assets/mc_grass_side.png");
-        let diffuse_bytes_stone = include_bytes!("../../assets/mc_stone.png");
+        let bytes_grass_side = include_bytes!("../../assets/game/grass_side.png");
+        let bytes_dirt_side = include_bytes!("../../assets/game/dirt.png");
 
         Self::from_bytes_array(
             &gpu.device,
             &gpu.queue,
-            &[diffuse_bytes_grass, diffuse_bytes_stone],
+            &[bytes_grass_side, bytes_dirt_side],
             Some("Block Texture Array"),
         )
         .expect("valid texture array")
