@@ -50,6 +50,10 @@ impl Camera {
         proj * view
     }
 
+    pub fn resize_aspect(&mut self, config: &wgpu::SurfaceConfiguration) {
+        self.aspect = config.width as f32 / config.height as f32;
+    }
+
     /*
      * These methods help reduce the wgpu boilerplate around setting up the bind group
      * for the game camera.

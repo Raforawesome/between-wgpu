@@ -154,6 +154,8 @@ impl RenderState {
 
     pub fn resize(&mut self, width: u32, height: u32) {
         self.gpu.resize(width, height);
+        self.depth_texture = Texture::create_depth_texture(&self.gpu);
+        self.camera.resize_aspect(&self.gpu.config);
         self.is_surface_configured = true;
     }
 
