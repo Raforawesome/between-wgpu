@@ -72,7 +72,9 @@ impl Camera {
 
         // The projection matrix warps the scene to give the effect of depth. Without this,
         // objects up close would be the same size as objects far away.
-        let proj = Mat4::perspective_rh(self.fovy.to_radians(), self.aspect, self.znear, self.zfar);
+        // We use an infinite reversed-Z projection for optimal depth precision.
+        let proj =
+            Mat4::perspective_infinite_reverse_lh(self.fovy.to_radians(), self.aspect, self.znear);
 
         // we return proj * view because the model -> view -> projection transformations apply
         // right to left. we dont need the model transformation since our vertices are already
