@@ -12,7 +12,7 @@ use winit::{event_loop::ActiveEventLoop, keyboard::KeyCode, window::Window};
 
 use std::sync::Arc;
 
-use crate::render::camera::Camera;
+use crate::render::camera::{Camera, CameraController};
 
 const VERTICES: [Vertex; 4] = [
     Vertex::from_arrays([-0.5, 0.5, 0.0], [0.0, 0.0]), // Top Left
@@ -45,6 +45,8 @@ pub struct RenderState {
     cam_buffer: wgpu::Buffer,
     /// Bind group for the camera matrix.
     cam_bind_group: wgpu::BindGroup,
+    /// Controller for moving the camera.
+    camera_controller: CameraController,
     /// Stores a texture to sample a pixel's 3D depth.
     depth_texture: Texture,
 }
@@ -68,6 +70,8 @@ impl RenderState {
         let cam_buffer = gpu.create_camera_buffer(&camera);
         let cam_group_layout = gpu.device.create_bind_group_layout(&Camera::layout_desc());
         let cam_bind_group = gpu.create_camera_bind_group(&cam_buffer, &cam_group_layout);
+
+        let camera_controller = CameraController::new(0.05);
 
         // set up the render pipeline
         let shader = gpu
@@ -158,6 +162,7 @@ impl RenderState {
             diffuse_bind_group,
             cam_buffer,
             cam_bind_group,
+            camera_controller,
             depth_texture,
         })
     }
@@ -170,6 +175,10 @@ impl RenderState {
     }
 
     pub fn handle_key(&mut self, event_loop: &ActiveEventLoop, key: KeyCode, is_pressed: bool) {
+        if self.camera_controller.process_events(key, is_pressed) {
+            return;
+        }
+
         #[allow(clippy::single_match)]
         match (key, is_pressed) {
             (KeyCode::Escape, true) => event_loop.exit(),
@@ -247,5 +256,12 @@ impl RenderState {
         Ok(())
     }
 
-    pub fn update(&mut self) {}
+    pub fn update(&mut self) {
+        self.camera_controller.update_camera(&mut self.camera);
+        self.gpu.queue.write_buffer(
+            &self.cam_buffer,
+            0,
+            bytemuck::bytes_of(&self.camera.build_view_projection_matrix()),
+        );
+    }
 }

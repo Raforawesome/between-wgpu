@@ -1,5 +1,6 @@
 use glam::{Mat4, Vec3};
 use wgpu::{BufferUsages, util::DeviceExt as _};
+use winit::keyboard::KeyCode;
 
 use crate::render::gpu::Gpu;
 
@@ -130,5 +131,83 @@ impl Gpu {
             }],
             label: Some("camera_bind_group"),
         })
+    }
+}
+
+pub struct CameraController {
+    speed: f32,
+    is_forward_pressed: bool,
+    is_backward_pressed: bool,
+    is_left_pressed: bool,
+    is_right_pressed: bool,
+    is_up_pressed: bool,
+    is_down_pressed: bool,
+}
+
+impl CameraController {
+    pub fn new(speed: f32) -> Self {
+        Self {
+            speed,
+            is_forward_pressed: false,
+            is_backward_pressed: false,
+            is_left_pressed: false,
+            is_right_pressed: false,
+            is_up_pressed: false,
+            is_down_pressed: false,
+        }
+    }
+
+    pub fn process_events(&mut self, key: KeyCode, is_pressed: bool) -> bool {
+        match key {
+            KeyCode::KeyW | KeyCode::ArrowUp => {
+                self.is_forward_pressed = is_pressed;
+                true
+            }
+            KeyCode::KeyA | KeyCode::ArrowLeft => {
+                self.is_left_pressed = is_pressed;
+                true
+            }
+            KeyCode::KeyS | KeyCode::ArrowDown => {
+                self.is_backward_pressed = is_pressed;
+                true
+            }
+            KeyCode::KeyD | KeyCode::ArrowRight => {
+                self.is_right_pressed = is_pressed;
+                true
+            }
+            KeyCode::Space => {
+                self.is_up_pressed = is_pressed;
+                true
+            }
+            KeyCode::ShiftLeft => {
+                self.is_down_pressed = is_pressed;
+                true
+            }
+            _ => false,
+        }
+    }
+
+    pub fn update_camera(&self, camera: &mut Camera) {
+        let forward = camera.forward();
+        let right = camera.right();
+
+        if self.is_forward_pressed {
+            camera.position += forward * self.speed;
+        }
+        if self.is_backward_pressed {
+            camera.position -= forward * self.speed;
+        }
+        if self.is_right_pressed {
+            camera.position += right * self.speed;
+        }
+        if self.is_left_pressed {
+            camera.position -= right * self.speed;
+        }
+        if self.is_up_pressed {
+            camera.position += camera.up * self.speed;
+        }
+        if self.is_down_pressed {
+            camera.position -= camera.up * self.speed;
+        }
     }
 }
