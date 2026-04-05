@@ -7,3 +7,7 @@ assets/*
 # apple please make a REAL OS THAT DOESNT INJECT HIDDEN FILES EVERYWHERE
 .DS_Store
 **/.DS_Store
+
+GEMINI.md
+CLAUDE.md
+AGENTS.md

@@ -5,7 +5,8 @@ use between_wgpu::render::RenderState;
 use thread_priority::set_current_thread_priority;
 use winit::{
     application::ApplicationHandler,
-    event::{KeyEvent, WindowEvent},
+    dpi::LogicalSize,
+    event::{DeviceEvent, DeviceId, KeyEvent, WindowEvent},
     event_loop::{ActiveEventLoop, EventLoop},
     keyboard::PhysicalKey,
     window::{Window, WindowId},
@@ -20,9 +21,16 @@ impl ApplicationHandler<RenderState> for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         let window_attrs = Window::default_attributes()
             .with_title("Between")
-            .with_inner_size(winit::dpi::LogicalSize::new(1500.0, 900.0))
-            .with_min_inner_size(winit::dpi::LogicalSize::new(800.0, 300.0));
+            .with_inner_size(LogicalSize::new(1500.0, 900.0))
+            .with_min_inner_size(LogicalSize::new(800.0, 300.0));
         let window = Arc::new(event_loop.create_window(window_attrs).unwrap());
+
+        // cross platform window locking
+        let _ = window
+            .set_cursor_grab(winit::window::CursorGrabMode::Locked)
+            .or_else(|_| window.set_cursor_grab(winit::window::CursorGrabMode::Confined));
+        window.set_cursor_visible(false);
+
         let state = pollster::block_on(RenderState::new(window)).unwrap();
         self.state = Some(state);
     }
@@ -31,10 +39,23 @@ impl ApplicationHandler<RenderState> for App {
     //     self.state = Some(event);
     // }
 
+    fn device_event(
+        &mut self,
+        _event_loop: &ActiveEventLoop,
+        _device_id: DeviceId,
+        event: DeviceEvent,
+    ) {
+        if let Some(state) = self.state.as_mut()
+            && let DeviceEvent::MouseMotion { delta } = event
+        {
+            state.handle_mouse_motion(delta.0, delta.1);
+        }
+    }
+
     fn window_event(
         &mut self,
         event_loop: &ActiveEventLoop,
-        window_id: WindowId,
+        _window_id: WindowId,
         event: WindowEvent,
     ) {
         let Some(state) = self.state.as_mut() else {

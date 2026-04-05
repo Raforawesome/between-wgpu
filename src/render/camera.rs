@@ -136,6 +136,7 @@ impl Gpu {
 
 pub struct CameraController {
     speed: f32,
+    sensitivity: f32,
     is_forward_pressed: bool,
     is_backward_pressed: bool,
     is_left_pressed: bool,
@@ -145,9 +146,10 @@ pub struct CameraController {
 }
 
 impl CameraController {
-    pub fn new(speed: f32) -> Self {
+    pub fn new(speed: f32, sensitivity: f32) -> Self {
         Self {
             speed,
+            sensitivity,
             is_forward_pressed: false,
             is_backward_pressed: false,
             is_left_pressed: false,
@@ -155,6 +157,13 @@ impl CameraController {
             is_up_pressed: false,
             is_down_pressed: false,
         }
+    }
+
+    pub fn process_mouse(&mut self, mouse_dx: f64, mouse_dy: f64, camera: &mut Camera) {
+        camera.yaw += mouse_dx as f32 * self.sensitivity;
+        camera.pitch -= mouse_dy as f32 * self.sensitivity;
+
+        camera.pitch = camera.pitch.clamp(-89.0, 89.0);
     }
 
     pub fn process_events(&mut self, key: KeyCode, is_pressed: bool) -> bool {

@@ -71,7 +71,7 @@ impl RenderState {
         let cam_group_layout = gpu.device.create_bind_group_layout(&Camera::layout_desc());
         let cam_bind_group = gpu.create_camera_bind_group(&cam_buffer, &cam_group_layout);
 
-        let camera_controller = CameraController::new(0.05);
+        let camera_controller = CameraController::new(0.05, 0.15);
 
         // set up the render pipeline
         let shader = gpu
@@ -184,6 +184,11 @@ impl RenderState {
             (KeyCode::Escape, true) => event_loop.exit(),
             _ => {}
         }
+    }
+
+    pub fn handle_mouse_motion(&mut self, mouse_dx: f64, mouse_dy: f64) {
+        self.camera_controller
+            .process_mouse(mouse_dx, mouse_dy, &mut self.camera);
     }
 
     pub fn render(&mut self) -> anyhow::Result<()> {
