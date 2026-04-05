@@ -13,7 +13,6 @@ pub struct Camera {
     pub aspect: f32,
     pub fovy: f32,
     pub znear: f32,
-    pub zfar: f32,
 }
 
 impl Camera {
@@ -24,14 +23,18 @@ impl Camera {
         // The x and z coordinates are determined on the 2d circle of their combined rotation plane
         // by cos(a) and sin(a), where a (angle) is the yaw in this case.
         // x will be sin(yaw) as the x coordinate of a circle is equal to sin(a).
-        // z will be -cos(yaw) for a similar reason, but negated as -z points forwards.
+        // z will be cos(yaw) for a similar reason, as +z points forwards in our LH system.
         //
         // we will need to multiply x and z by cos(pitch), which will make them 0 when sin(pitch)
         // is 1, and scale them accordingly otherwise. this gives us a unit vector.
         let (pitch_sin, pitch_cos) = self.pitch.to_radians().sin_cos();
         let (yaw_sin, yaw_cos) = self.yaw.to_radians().sin_cos();
 
-        (yaw_sin * pitch_cos, pitch_sin, -yaw_cos * pitch_cos).into()
+        (yaw_sin * pitch_cos, pitch_sin, yaw_cos * pitch_cos).into()
+    }
+
+    pub fn right(&self) -> Vec3 {
+        todo!()
     }
 
     pub fn new(pos: impl Into<Vec3>, target: impl Into<Vec3>, aspect: f32) -> Self {
@@ -41,7 +44,7 @@ impl Camera {
 
         let dir = (target - position).normalize();
         let pitch = dir.y.asin().to_degrees();
-        let yaw = dir.x.atan2(-dir.z).to_degrees();
+        let yaw = dir.x.atan2(dir.z).to_degrees();
 
         Self {
             // position the camera 1 unit up and 2 units back
@@ -56,8 +59,6 @@ impl Camera {
             fovy: 45.0,
             // near plane of frustum
             znear: 0.1,
-            // far plane of frustum
-            zfar: 100.0,
         }
     }
 
@@ -67,7 +68,7 @@ impl Camera {
 
         // The view matrix moves the world to be at the position and rotation of the camera.
         // It's essentially an inverse of whatever the transform matrix of the camera would be.
-        let view = Mat4::look_at_rh(self.position, target, self.up);
+        let view = Mat4::look_at_lh(self.position, target, self.up);
 
         // The projection matrix warps the scene to give the effect of depth. Without this,
         // objects up close would be the same size as objects far away.
