@@ -6,8 +6,9 @@ use crate::render::gpu::Gpu;
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Camera {
-    pub eye: Vec3,
-    pub target: Vec3,
+    pub position: Vec3,
+    pub yaw: f32,
+    pub pitch: f32,
     pub up: Vec3,
     pub aspect: f32,
     pub fovy: f32,
@@ -16,14 +17,39 @@ pub struct Camera {
 }
 
 impl Camera {
+    pub fn forward(&self) -> Vec3 {
+        // the sine of the pitch will oscillate between 1 at 90 deg (upwards) and 0 at
+        // 0 degrees (forwards), making it perfect for the y coordinate of the forward vector.
+        //
+        // The x and z coordinates are determined on the 2d circle of their combined rotation plane
+        // by cos(a) and sin(a), where a (angle) is the yaw in this case.
+        // x will be sin(yaw) as the x coordinate of a circle is equal to sin(a).
+        // z will be -cos(yaw) for a similar reason, but negated as -z points forwards.
+        //
+        // we will need to multiply x and z by cos(pitch), which will make them 0 when sin(pitch)
+        // is 1, and scale them accordingly otherwise. this gives us a unit vector.
+        let (pitch_sin, pitch_cos) = self.pitch.to_radians().sin_cos();
+        let (yaw_sin, yaw_cos) = self.yaw.to_radians().sin_cos();
+
+        (yaw_sin * pitch_cos, pitch_sin, -yaw_cos * pitch_cos).into()
+    }
+
     pub fn new(pos: impl Into<Vec3>, target: impl Into<Vec3>, aspect: f32) -> Self {
+        let position = pos.into();
+        let target = target.into();
+        let up = Vec3::Y;
+
+        let dir = (target - position).normalize();
+        let pitch = dir.y.asin().to_degrees();
+        let yaw = dir.x.atan2(-dir.z).to_degrees();
+
         Self {
             // position the camera 1 unit up and 2 units back
-            eye: pos.into(),
-            // be looking at the origin
-            target: target.into(),
+            position,
+            yaw,
+            pitch,
             // which direction is up
-            up: Vec3::Y,
+            up,
             // set aspect ratio to surface config
             aspect,
             // fov along y-axis
@@ -36,9 +62,12 @@ impl Camera {
     }
 
     pub fn build_view_projection_matrix(&self) -> Mat4 {
+        // multiply forward vector by some constant to avoid precision-related camera snapping
+        let target = self.position + self.forward() * 5.0;
+
         // The view matrix moves the world to be at the position and rotation of the camera.
         // It's essentially an inverse of whatever the transform matrix of the camera would be.
-        let view = Mat4::look_at_rh(self.eye, self.target, self.up);
+        let view = Mat4::look_at_rh(self.position, target, self.up);
 
         // The projection matrix warps the scene to give the effect of depth. Without this,
         // objects up close would be the same size as objects far away.
