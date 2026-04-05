@@ -34,7 +34,7 @@ impl Camera {
     }
 
     pub fn right(&self) -> Vec3 {
-        todo!()
+        self.up.cross(self.forward()).normalize()
     }
 
     pub fn new(pos: impl Into<Vec3>, target: impl Into<Vec3>, aspect: f32) -> Self {
