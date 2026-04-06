@@ -51,14 +51,14 @@ pub fn add_top_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, texture_in
     vertices.push([x, y + 1.0, z]);
 
     // form two triangles:
-    // - 4, 2, 3
-    // - 4, 1, 2
+    // - 4, 3, 2
+    // - 4, 2, 1
     indices.push(v4_id);
-    indices.push(v2_id);
     indices.push(v3_id);
-    indices.push(v4_id);
-    indices.push(v1_id);
     indices.push(v2_id);
+    indices.push(v4_id);
+    indices.push(v2_id);
+    indices.push(v1_id);
 
     // one normal per vertex
     for _ in 0..4 {
@@ -96,14 +96,14 @@ pub fn add_bottom_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, texture
     vertices.push([x, y, z]);
 
     // form two triangles:
-    // - 4, 3, 2
-    // - 4, 2, 1
+    // - 4, 2, 3
+    // - 4, 1, 2
     indices.push(v4_id);
+    indices.push(v2_id);
     indices.push(v3_id);
-    indices.push(v2_id);
     indices.push(v4_id);
-    indices.push(v2_id);
     indices.push(v1_id);
+    indices.push(v2_id);
 
     // one normal per vertex
     for _ in 0..4 {
@@ -141,14 +141,14 @@ pub fn add_front_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, texture_
     vertices.push([x, y + 1.0, z + 1.0]);
 
     // form two triangles:
-    // - 4, 2, 3
-    // - 4, 1, 2
+    // - 4, 3, 2
+    // - 4, 2, 1
     indices.push(v4_id);
-    indices.push(v2_id);
     indices.push(v3_id);
-    indices.push(v4_id);
-    indices.push(v1_id);
     indices.push(v2_id);
+    indices.push(v4_id);
+    indices.push(v2_id);
+    indices.push(v1_id);
 
     // one normal per vertex
     for _ in 0..4 {
@@ -186,14 +186,14 @@ pub fn add_back_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, texture_i
     vertices.push([x, y + 1.0, z]);
 
     // form two triangles:
-    // - 4, 3, 2
-    // - 4, 2, 1
+    // - 4, 2, 3
+    // - 4, 1, 2
     indices.push(v4_id);
+    indices.push(v2_id);
     indices.push(v3_id);
-    indices.push(v2_id);
     indices.push(v4_id);
-    indices.push(v2_id);
     indices.push(v1_id);
+    indices.push(v2_id);
 
     // one normal per vertex
     for _ in 0..4 {
@@ -231,14 +231,14 @@ pub fn add_left_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, texture_i
     vertices.push([x, y + 1.0, z]);
 
     // form two triangles:
-    // - 4, 2, 3
-    // - 4, 1, 2
+    // - 4, 3, 2
+    // - 4, 2, 1
     indices.push(v4_id);
-    indices.push(v2_id);
     indices.push(v3_id);
-    indices.push(v4_id);
-    indices.push(v1_id);
     indices.push(v2_id);
+    indices.push(v4_id);
+    indices.push(v2_id);
+    indices.push(v1_id);
 
     // one normal per vertex
     for _ in 0..4 {
@@ -276,14 +276,14 @@ pub fn add_right_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, texture_
     vertices.push([x + 1.0, y + 1.0, z]);
 
     // form two triangles:
-    // - 4, 3, 2
-    // - 4, 2, 1
+    // - 4, 2, 3
+    // - 4, 1, 2
     indices.push(v4_id);
+    indices.push(v2_id);
     indices.push(v3_id);
-    indices.push(v2_id);
     indices.push(v4_id);
-    indices.push(v2_id);
     indices.push(v1_id);
+    indices.push(v2_id);
 
     // one normal per vertex
     for _ in 0..4 {
