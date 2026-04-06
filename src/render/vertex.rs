@@ -4,7 +4,7 @@ use bytemuck::{Pod, Zeroable};
 use glam::{Vec2, Vec3};
 use wgpu::{VertexBufferLayout, VertexFormat, VertexStepMode};
 
-#[derive(Pod, Zeroable, Copy, Clone)]
+#[derive(Pod, Zeroable, Debug, Copy, Clone)]
 #[repr(C)]
 /// This Vertex struct represents the unit of data given to each instance of
 /// a vertex shader.

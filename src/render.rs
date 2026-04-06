@@ -12,19 +12,10 @@ use winit::{event_loop::ActiveEventLoop, keyboard::KeyCode, window::Window};
 
 use std::sync::Arc;
 
-use crate::render::camera::{Camera, CameraController};
-
-const VERTICES: [Vertex; 4] = [
-    Vertex::from_arrays([-0.5, 0.5, 0.0], [0.0, 0.0]), // Top Left
-    Vertex::from_arrays([-0.5, -0.5, 0.0], [0.0, 1.0]), // Bottom Left
-    Vertex::from_arrays([0.5, -0.5, 0.0], [1.0, 1.0]), // Bottom Right
-    Vertex::from_arrays([0.5, 0.5, 0.0], [1.0, 0.0]),  // Top Right
-];
-
-const INDICES: [u16; 6] = [
-    0, 1, 2, // Triangle 1
-    0, 2, 3, // Triangle 2
-];
+use crate::{
+    render::camera::{Camera, CameraController},
+    world::chunks::ChunkManager,
+};
 
 /// Handles setting up a renderer with [wgpu]. Contains an abstraction for the GPU device.
 pub struct RenderState {
@@ -37,6 +28,8 @@ pub struct RenderState {
     vertex_buffer: wgpu::Buffer,
     /// Stores a list of vertex indices to draw. Each pair of 3 represents one triangle.
     index_buffer: wgpu::Buffer,
+    /// Number of indices to draw
+    index_count: u32,
     /// Bind group for the diffuse texture array and sampler.
     diffuse_bind_group: wgpu::BindGroup,
     /// Camera for the scene.
@@ -136,11 +129,21 @@ impl RenderState {
                 multiview_mask: None, // not useful for this project
             });
 
+        let chunk_man = ChunkManager::default();
+        let chunk = chunk_man.get_or_generate_chunk((1, 5, -1).into());
+        let (verts, indices) = chunk_man.mesh_chunk(&chunk);
+        dbg!(
+            chunk
+                .blocks()
+                .iter()
+                .filter(|b| **b != crate::world::block::BlockType::Air)
+                .count()
+        );
         let vertex_buffer = gpu
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("between vertex buffer"),
-                contents: bytemuck::cast_slice(&VERTICES),
+                contents: bytemuck::cast_slice(&verts),
                 usage: BufferUsages::VERTEX,
             });
 
@@ -148,7 +151,7 @@ impl RenderState {
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("between index buffer"),
-                contents: bytemuck::cast_slice(&INDICES),
+                contents: bytemuck::cast_slice(&indices),
                 usage: BufferUsages::INDEX,
             });
 
@@ -159,6 +162,7 @@ impl RenderState {
             render_pipeline,
             vertex_buffer,
             index_buffer,
+            index_count: indices.len() as u32,
             diffuse_bind_group,
             cam_buffer,
             cam_bind_group,
@@ -249,10 +253,9 @@ impl RenderState {
             render_pass.set_bind_group(1, &self.cam_bind_group, &[]);
 
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
 
-            let idx_count = INDICES.len() as u32;
-            render_pass.draw_indexed(0..idx_count, 0, 0..1);
+            render_pass.draw_indexed(0..self.index_count, 0, 0..1);
         }
 
         self.gpu.queue.submit([encoder.finish()]);
