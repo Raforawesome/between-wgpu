@@ -1,7 +1,7 @@
 pub mod chunk_cursor;
 pub mod faces;
 
-use glam::{IVec3, U8Vec3, Vec3};
+use glam::{IVec3, U8Vec3};
 
 use crate::constants::{CHUNK_IDX, CHUNK_VOL};
 use crate::meshing::{chunk_cursor::ChunkCursor, faces::Face};
@@ -16,7 +16,7 @@ use faces::{
 };
 
 /// Stores (in order): vertices, normals, uvs, indices
-pub struct ChunkMeshData(Vec<[f32; 3]>, Vec<[f32; 3]>, Vec<[f32; 2]>, Vec<u32>);
+pub struct ChunkMeshData(Vec<[f32; 3]>, Vec<[f32; 3]>, Vec<[f32; 3]>, Vec<u32>);
 
 /// Stores neighbouring chunks, if they exist
 struct ChunkNeighbours<'a> {
@@ -59,7 +59,7 @@ impl ChunkManager {
 fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData {
     let vertices: Vec<[f32; 3]> = Vec::new();
     let normals: Vec<[f32; 3]> = Vec::new();
-    let uvs: Vec<[f32; 2]> = Vec::new();
+    let uvs: Vec<[f32; 3]> = Vec::new();
     let indices: Vec<u32> = Vec::new();
     let mut mesh_data = ChunkMeshData(vertices, normals, uvs, indices);
 

@@ -1,5 +1,4 @@
 #![allow(clippy::too_many_arguments)]
-use crate::constants::{ATLAS_SIZE, TILE_STEP};
 use crate::meshing::ChunkMeshData;
 use glam::U8Vec3;
 
@@ -66,15 +65,12 @@ pub fn add_top_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, texture_in
     }
 
     // handle UVs for textures
-    let u_min = (texture_index % ATLAS_SIZE) as f32 * TILE_STEP; // steps to skip right
-    let v_min = (texture_index / ATLAS_SIZE) as f32 * TILE_STEP; // steps to skip down
-    let u_max = u_min + TILE_STEP;
-    let v_max = v_min + TILE_STEP;
+    let tex_idx = texture_index as f32;
 
-    uvs.push([u_min, v_max]);
-    uvs.push([u_max, v_max]);
-    uvs.push([u_max, v_min]);
-    uvs.push([u_min, v_min]);
+    uvs.push([0.0, 1.0, tex_idx]);
+    uvs.push([1.0, 1.0, tex_idx]);
+    uvs.push([1.0, 0.0, tex_idx]);
+    uvs.push([0.0, 0.0, tex_idx]);
 }
 
 pub fn add_bottom_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, texture_index: usize) {
@@ -111,15 +107,12 @@ pub fn add_bottom_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, texture
     }
 
     // handle UVs for textures
-    let u_min = (texture_index % ATLAS_SIZE) as f32 * TILE_STEP; // steps to skip right
-    let v_min = (texture_index / ATLAS_SIZE) as f32 * TILE_STEP; // steps to skip down
-    let u_max = u_min + TILE_STEP;
-    let v_max = v_min + TILE_STEP;
+    let tex_idx = texture_index as f32;
 
-    uvs.push([u_min, v_max]);
-    uvs.push([u_max, v_max]);
-    uvs.push([u_max, v_min]);
-    uvs.push([u_min, v_min]);
+    uvs.push([0.0, 1.0, tex_idx]);
+    uvs.push([1.0, 1.0, tex_idx]);
+    uvs.push([1.0, 0.0, tex_idx]);
+    uvs.push([0.0, 0.0, tex_idx]);
 }
 
 pub fn add_front_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, texture_index: usize) {
@@ -156,15 +149,12 @@ pub fn add_front_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, texture_
     }
 
     // handle UVs for textures
-    let u_min = (texture_index % ATLAS_SIZE) as f32 * TILE_STEP; // steps to skip right
-    let v_min = (texture_index / ATLAS_SIZE) as f32 * TILE_STEP; // steps to skip down
-    let u_max = u_min + TILE_STEP;
-    let v_max = v_min + TILE_STEP;
+    let tex_idx = texture_index as f32;
 
-    uvs.push([u_min, v_max]);
-    uvs.push([u_max, v_max]);
-    uvs.push([u_max, v_min]);
-    uvs.push([u_min, v_min]);
+    uvs.push([0.0, 1.0, tex_idx]);
+    uvs.push([1.0, 1.0, tex_idx]);
+    uvs.push([1.0, 0.0, tex_idx]);
+    uvs.push([0.0, 0.0, tex_idx]);
 }
 
 pub fn add_back_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, texture_index: usize) {
@@ -201,15 +191,12 @@ pub fn add_back_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, texture_i
     }
 
     // handle UVs for textures
-    let u_min = (texture_index % ATLAS_SIZE) as f32 * TILE_STEP; // steps to skip right
-    let v_min = (texture_index / ATLAS_SIZE) as f32 * TILE_STEP; // steps to skip down
-    let u_max = u_min + TILE_STEP;
-    let v_max = v_min + TILE_STEP;
+    let tex_idx = texture_index as f32;
 
-    uvs.push([u_min, v_max]);
-    uvs.push([u_max, v_max]);
-    uvs.push([u_max, v_min]);
-    uvs.push([u_min, v_min]);
+    uvs.push([0.0, 1.0, tex_idx]);
+    uvs.push([1.0, 1.0, tex_idx]);
+    uvs.push([1.0, 0.0, tex_idx]);
+    uvs.push([0.0, 0.0, tex_idx]);
 }
 
 pub fn add_left_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, texture_index: usize) {
@@ -246,15 +233,12 @@ pub fn add_left_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, texture_i
     }
 
     // handle UVs for textures
-    let u_min = (texture_index % ATLAS_SIZE) as f32 * TILE_STEP; // steps to skip right
-    let v_min = (texture_index / ATLAS_SIZE) as f32 * TILE_STEP; // steps to skip down
-    let u_max = u_min + TILE_STEP;
-    let v_max = v_min + TILE_STEP;
+    let tex_idx = texture_index as f32;
 
-    uvs.push([u_min, v_max]);
-    uvs.push([u_max, v_max]);
-    uvs.push([u_max, v_min]);
-    uvs.push([u_min, v_min]);
+    uvs.push([0.0, 1.0, tex_idx]);
+    uvs.push([1.0, 1.0, tex_idx]);
+    uvs.push([1.0, 0.0, tex_idx]);
+    uvs.push([0.0, 0.0, tex_idx]);
 }
 
 pub fn add_right_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, texture_index: usize) {
@@ -291,13 +275,10 @@ pub fn add_right_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, texture_
     }
 
     // handle UVs for textures
-    let u_min = (texture_index % ATLAS_SIZE) as f32 * TILE_STEP; // steps to skip right
-    let v_min = (texture_index / ATLAS_SIZE) as f32 * TILE_STEP; // steps to skip down
-    let u_max = u_min + TILE_STEP;
-    let v_max = v_min + TILE_STEP;
+    let tex_idx = texture_index as f32;
 
-    uvs.push([u_min, v_max]);
-    uvs.push([u_max, v_max]);
-    uvs.push([u_max, v_min]);
-    uvs.push([u_min, v_min]);
+    uvs.push([0.0, 1.0, tex_idx]);
+    uvs.push([1.0, 1.0, tex_idx]);
+    uvs.push([1.0, 0.0, tex_idx]);
+    uvs.push([0.0, 0.0, tex_idx]);
 }

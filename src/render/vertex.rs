@@ -1,7 +1,7 @@
 use std::mem;
 
 use bytemuck::{Pod, Zeroable};
-use glam::{Vec2, Vec3};
+use glam::Vec3;
 use wgpu::{VertexBufferLayout, VertexFormat, VertexStepMode};
 
 #[derive(Pod, Zeroable, Debug, Copy, Clone)]
@@ -10,11 +10,11 @@ use wgpu::{VertexBufferLayout, VertexFormat, VertexStepMode};
 /// a vertex shader.
 pub struct Vertex {
     pub position: Vec3,
-    pub tex_coords: Vec2,
+    pub tex_coords: Vec3,
 }
 
 impl Vertex {
-    pub fn new(position: impl Into<Vec3>, tex_coords: impl Into<Vec2>) -> Self {
+    pub fn new(position: impl Into<Vec3>, tex_coords: impl Into<Vec3>) -> Self {
         let position = position.into();
         let tex_coords = tex_coords.into();
 
@@ -26,11 +26,11 @@ impl Vertex {
 
     /// Uses [std::mem::transmute] to form a [Vertex] struct with arrays of floats.
     /// This allows the method to be `const`. This method is not marked as unsafe since
-    /// the use of transmute is safe, as [Vec3] and [Vec2] are marked with `#[repr(C)]`.
-    pub const fn from_arrays(position: [f32; 3], tex_coords: [f32; 2]) -> Self {
+    /// the use of transmute is safe, as [Vec3] and [Vec3] are marked with `#[repr(C)]`.
+    pub const fn from_arrays(position: [f32; 3], tex_coords: [f32; 3]) -> Self {
         Self {
             position: unsafe { mem::transmute::<[f32; 3], Vec3>(position) },
-            tex_coords: unsafe { mem::transmute::<[f32; 2], Vec2>(tex_coords) },
+            tex_coords: unsafe { mem::transmute::<[f32; 3], Vec3>(tex_coords) },
         }
     }
 }
@@ -52,7 +52,7 @@ impl Vertex {
                 wgpu::VertexAttribute {
                     offset: mem::size_of::<Vec3>() as wgpu::BufferAddress,
                     shader_location: 1,
-                    format: VertexFormat::Float32x2,
+                    format: VertexFormat::Float32x3,
                 },
             ],
         }

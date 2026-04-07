@@ -22,12 +22,12 @@ ParameterBlock<Camera> camera;   // bind group 1
 */
 struct VertexInput {
     float3 position : POSITION; // user defined semantics are given an index in order of declaration
-    float2 tex_coords : UV;
+    float3 tex_coords : UV;
 }
 
 struct VertexOutput {
     float4 clip_position : SV_Position;
-    float2 tex_coords : UV;
+    float3 tex_coords : UV;
 }
 
 [shader("vertex")]
@@ -45,9 +45,8 @@ VertexOutput vs_main(VertexInput vert) {
 */
 [shader("fragment")]
 float4 fs_main(VertexOutput in) : SV_Target {
-    let tex_idx = 0;
     let tex_array = bg.textures;
     let sampler = bg.sampler;
 
-    return tex_array.Sample(sampler, float3(in.tex_coords, tex_idx));
+    return tex_array.Sample(sampler, in.tex_coords);
 }
