@@ -13,13 +13,24 @@ pub struct Texture {
 impl Texture {
     /// Convenience method to create the default texture array for the game
     pub fn create_texture_array(gpu: &Gpu) -> Self {
+        let bytes_grass_top = include_bytes!("../../assets/game/grass.png");
         let bytes_grass_side = include_bytes!("../../assets/game/grass_side.png");
-        let bytes_dirt_side = include_bytes!("../../assets/game/dirt.png");
+        let bytes_dirt = include_bytes!("../../assets/game/dirt.png");
+        let bytes_sand = include_bytes!("../../assets/game/sand.png");
 
         Self::from_bytes_array(
             &gpu.device,
             &gpu.queue,
-            &[bytes_grass_side, bytes_dirt_side],
+            &[
+                bytes_grass_top,  // 0: Grass Top
+                bytes_grass_side, // 1: Grass Side
+                bytes_dirt,       // 2: Dirt / Grass Bottom
+                bytes_dirt,       // 3: Stone (placeholder)
+                bytes_sand,       // 4: Sand
+                bytes_dirt,       // 5: Log (placeholder)
+                bytes_grass_top,  // 6: Leaf (placeholder)
+                bytes_sand,       // 7: Water (placeholder)
+            ],
             Some("Block Texture Array"),
         )
         .expect("valid texture array")
