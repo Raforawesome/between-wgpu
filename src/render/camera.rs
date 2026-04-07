@@ -136,7 +136,8 @@ impl Gpu {
 
 pub struct CameraController {
     speed: f32,
-    sensitivity: f32,
+    sensitivity_x: f32,
+    sensitivity_y: f32,
     is_forward_pressed: bool,
     is_backward_pressed: bool,
     is_left_pressed: bool,
@@ -145,11 +146,20 @@ pub struct CameraController {
     is_down_pressed: bool,
 }
 
+impl Default for CameraController {
+    fn default() -> Self {
+        Self::new(0.2, (0.15, 0.1))
+    }
+}
+
 impl CameraController {
-    pub fn new(speed: f32, sensitivity: f32) -> Self {
+    pub fn new(speed: f32, sensitivity: (f32, f32)) -> Self {
+        let (sensitivity_x, sensitivity_y) = sensitivity;
+
         Self {
             speed,
-            sensitivity,
+            sensitivity_x,
+            sensitivity_y,
             is_forward_pressed: false,
             is_backward_pressed: false,
             is_left_pressed: false,
@@ -160,8 +170,8 @@ impl CameraController {
     }
 
     pub fn process_mouse(&mut self, mouse_dx: f64, mouse_dy: f64, camera: &mut Camera) {
-        camera.yaw += mouse_dx as f32 * self.sensitivity;
-        camera.pitch -= mouse_dy as f32 * self.sensitivity;
+        camera.yaw += mouse_dx as f32 * self.sensitivity_x;
+        camera.pitch -= mouse_dy as f32 * self.sensitivity_y;
 
         camera.pitch = camera.pitch.clamp(-89.0, 89.0);
     }

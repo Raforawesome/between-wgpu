@@ -64,7 +64,7 @@ impl RenderState {
         let cam_group_layout = gpu.device.create_bind_group_layout(&Camera::layout_desc());
         let cam_bind_group = gpu.create_camera_bind_group(&cam_buffer, &cam_group_layout);
 
-        let camera_controller = CameraController::new(0.2, 0.15);
+        let camera_controller = CameraController::default();
 
         // set up the render pipeline
         let shader = gpu
@@ -132,8 +132,8 @@ impl RenderState {
         let chunk_man = ChunkManager::default();
         let mut verts: Vec<Vertex> = vec![];
         let mut indices: Vec<u32> = vec![];
-        for x in -8..=8 {
-            for z in -8..=8 {
+        for x in -16..=16 {
+            for z in -16..=16 {
                 for y in 4..=5 {
                     let chunk = chunk_man.get_or_generate_chunk((x, y, z).into());
                     let (lv, li) = chunk_man.mesh_chunk(&chunk);
