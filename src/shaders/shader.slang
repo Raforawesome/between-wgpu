@@ -8,14 +8,14 @@ struct TexBindGroup {
     SamplerState sampler; // binding 1 contains the sampler
 }
 
-ParameterBlock<TexBindGroup> bg;
-
 // Bind group 1: camera bind group
 struct Camera {
     float4x4 view_proj; // binding 0 contains camera matrix
 }
 
-ParameterBlock<Camera> camera;
+// declare bind groups in incrementing order
+ParameterBlock<TexBindGroup> bg; // bind group 0
+ParameterBlock<Camera> camera;   // bind group 1
 
 /*
  * Vertex Shader

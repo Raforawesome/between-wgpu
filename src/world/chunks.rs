@@ -51,6 +51,14 @@ impl Chunk {
     pub fn coords(&self) -> IVec3 {
         self.coords
     }
+
+    pub fn chunk_to_world_space(&self, chunk_coords: U8Vec3) -> IVec3 {
+        IVec3 {
+            x: self.coords.x * CHUNK_SIZEI + chunk_coords.x as i32,
+            y: self.coords.y * CHUNK_SIZEI + chunk_coords.y as i32,
+            z: self.coords.z * CHUNK_SIZEI + chunk_coords.z as i32,
+        }
+    }
 }
 
 impl ChunkManager {

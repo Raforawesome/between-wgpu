@@ -1,7 +1,7 @@
 pub mod chunk_cursor;
 pub mod faces;
 
-use glam::IVec3;
+use glam::{IVec3, U8Vec3, Vec3};
 
 use crate::constants::{CHUNK_IDX, CHUNK_VOL};
 use crate::meshing::{chunk_cursor::ChunkCursor, faces::Face};
@@ -44,7 +44,12 @@ impl ChunkManager {
 
         let mut vertices = Vec::with_capacity(positions.len());
         for (pos, uv) in positions.into_iter().zip(uvs) {
-            vertices.push(Vertex::from_arrays(pos, uv));
+            // convert vertices to world space
+            let [vx, vy, vz] = pos;
+            let vert_pos = U8Vec3::new(vx as u8, vy as u8, vz as u8);
+            let IVec3 { x, y, z } = chunk.chunk_to_world_space(vert_pos);
+
+            vertices.push(Vertex::from_arrays([x as f32, y as f32, z as f32], uv));
         }
 
         (vertices, indices)

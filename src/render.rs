@@ -56,7 +56,7 @@ impl RenderState {
 
         // set up camera & camera bind group (creates camera buffer)
         let camera = Camera::new(
-            (0., 1., -2.),
+            (0., 90., -2.),
             (0., 0., 0.),
             gpu.config.width as f32 / gpu.config.height as f32,
         );
@@ -64,7 +64,7 @@ impl RenderState {
         let cam_group_layout = gpu.device.create_bind_group_layout(&Camera::layout_desc());
         let cam_bind_group = gpu.create_camera_bind_group(&cam_buffer, &cam_group_layout);
 
-        let camera_controller = CameraController::new(0.05, 0.15);
+        let camera_controller = CameraController::new(0.2, 0.15);
 
         // set up the render pipeline
         let shader = gpu
@@ -130,15 +130,23 @@ impl RenderState {
             });
 
         let chunk_man = ChunkManager::default();
-        let chunk = chunk_man.get_or_generate_chunk((1, 5, -1).into());
-        let (verts, indices) = chunk_man.mesh_chunk(&chunk);
-        dbg!(
-            chunk
-                .blocks()
-                .iter()
-                .filter(|b| **b != crate::world::block::BlockType::Air)
-                .count()
-        );
+        let mut verts: Vec<Vertex> = vec![];
+        let mut indices: Vec<u32> = vec![];
+        for x in -8..=8 {
+            for z in -8..=8 {
+                for y in 4..=5 {
+                    let chunk = chunk_man.get_or_generate_chunk((x, y, z).into());
+                    let (lv, li) = chunk_man.mesh_chunk(&chunk);
+
+                    let base = verts.len() as u32;
+                    verts.extend_from_slice(&lv);
+                    indices.extend(li.iter().map(|i| base + *i));
+                }
+            }
+        }
+        // let chunk = chunk_man.get_or_generate_chunk((1, 5, -1).into());
+        // let (verts, indices) = chunk_man.mesh_chunk(&chunk);
+
         let vertex_buffer = gpu
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
