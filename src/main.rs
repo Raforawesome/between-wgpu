@@ -58,17 +58,17 @@ impl ApplicationHandler<RenderState> for App {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
-        let Some(state) = self.state.as_mut() else {
+        let Some(render_state) = self.state.as_mut() else {
             return;
         };
 
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
-            WindowEvent::Resized(size) => state.resize(size.width, size.height),
+            WindowEvent::Resized(size) => render_state.resize(size.width, size.height),
             WindowEvent::RedrawRequested => {
-                state.update();
+                render_state.update();
 
-                match state.render() {
+                match render_state.render() {
                     Ok(_) => {}
                     Err(e) => {
                         log::error!("{e}");
@@ -84,7 +84,7 @@ impl ApplicationHandler<RenderState> for App {
                         ..
                     },
                 ..
-            } => state.handle_key(event_loop, code, key_state.is_pressed()),
+            } => render_state.handle_key(event_loop, code, key_state.is_pressed()),
             _ => {}
         }
     }

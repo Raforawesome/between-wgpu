@@ -8,7 +8,8 @@ use crate::meshing::{chunk_cursor::ChunkCursor, faces::Face};
 use crate::render::vertex::Vertex;
 use crate::world::{
     block::BlockType,
-    chunks::{Chunk, ChunkManager, ChunkRef},
+    chunk_manager::{ChunkManager, ChunkRef},
+    chunks::Chunk,
 };
 
 use faces::{

@@ -14,7 +14,7 @@ use std::sync::Arc;
 
 use crate::{
     render::camera::{Camera, CameraController},
-    world::chunks::ChunkManager,
+    world::chunk_manager::ChunkManager,
 };
 
 /// Handles setting up a renderer with [wgpu]. Contains an abstraction for the GPU device.

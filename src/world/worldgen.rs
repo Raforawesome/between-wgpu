@@ -13,7 +13,7 @@ pub fn get_y(x: f32, z: f32) -> f32 {
 }
 
 pub fn sample_density(x: f32, y: f32, z: f32) -> f32 {
-    let noise = noise_functions::Simplex
+    let noise = noise_functions::OpenSimplex2s
         .fbm(3, 0.5, 2.0)
         .seed(42)
         .frequency(FREQ)

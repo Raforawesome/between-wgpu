@@ -8,9 +8,9 @@ pub const CHUNK_SIZE: usize = 16;
 // world gen
 pub const BASE_HEIGHT: f32 = 80.0;
 pub const SEA_LEVEL: f32 = 72.0;
-pub const FREQ: f32 = 1.0 / 700.0;
+pub const FREQ: f32 = 1.0 / 200.0;
 pub const AMPLITUDE: f32 = 1.0;
-pub const HEIGHT_GRADIENT: f32 = 30.0;
+pub const HEIGHT_GRADIENT: f32 = 25.0;
 
 // texture atlas (set to actual values of atlas)
 //
