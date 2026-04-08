@@ -1,3 +1,5 @@
+use std::collections;
+
 use rapidhash::fast::RandomState;
 
 pub mod constants;
@@ -5,7 +7,13 @@ pub mod meshing;
 pub mod render;
 pub mod world;
 
-use crate::world::chunk_manager::ChunkManager;
+use crate::{
+    world::{
+        chunk_manager::ChunkManager,
+        loader::ChunkLoader,
+        player::{Player, PlayerController},
+    },
+};
 
 pub type HashSet<K> = collections::HashSet<K, RandomState>;
 pub type HashMap<K, V> = collections::HashMap<K, V, RandomState>;

@@ -8,13 +8,14 @@ use texture::Texture;
 use vertex::Vertex;
 
 use wgpu::{BufferUsages, PipelineCompilationOptions, util::DeviceExt as _};
-use winit::{event_loop::ActiveEventLoop, keyboard::KeyCode, window::Window};
+use winit::{window::Window};
 
 use std::sync::Arc;
 
 use crate::{
-    render::camera::{Camera, CameraController},
+    render::camera::Camera,
     world::chunk_manager::ChunkManager,
+    world::player::Player,
 };
 
 /// Handles setting up a renderer with [wgpu]. Contains an abstraction for the GPU device.
@@ -38,8 +39,6 @@ pub struct RenderState {
     cam_buffer: wgpu::Buffer,
     /// Bind group for the camera matrix.
     cam_bind_group: wgpu::BindGroup,
-    /// Controller for moving the camera.
-    camera_controller: CameraController,
     /// Stores a texture to sample a pixel's 3D depth.
     depth_texture: Texture,
 }
@@ -63,8 +62,6 @@ impl RenderState {
         let cam_buffer = gpu.create_camera_buffer(&camera);
         let cam_group_layout = gpu.device.create_bind_group_layout(&Camera::layout_desc());
         let cam_bind_group = gpu.create_camera_bind_group(&cam_buffer, &cam_group_layout);
-
-        let camera_controller = CameraController::default();
 
         // set up the render pipeline
         let shader = gpu
@@ -174,7 +171,6 @@ impl RenderState {
             diffuse_bind_group,
             cam_buffer,
             cam_bind_group,
-            camera_controller,
             depth_texture,
         })
     }
@@ -184,23 +180,6 @@ impl RenderState {
         self.depth_texture = Texture::create_depth_texture(&self.gpu);
         self.camera.resize_aspect(&self.gpu.config);
         self.is_surface_configured = true;
-    }
-
-    pub fn handle_key(&mut self, event_loop: &ActiveEventLoop, key: KeyCode, is_pressed: bool) {
-        if self.camera_controller.process_events(key, is_pressed) {
-            return;
-        }
-
-        #[allow(clippy::single_match)]
-        match (key, is_pressed) {
-            (KeyCode::Escape, true) => event_loop.exit(),
-            _ => {}
-        }
-    }
-
-    pub fn handle_mouse_motion(&mut self, mouse_dx: f64, mouse_dy: f64) {
-        self.camera_controller
-            .process_mouse(mouse_dx, mouse_dy, &mut self.camera);
     }
 
     pub fn render(&mut self) -> anyhow::Result<()> {
@@ -272,8 +251,11 @@ impl RenderState {
         Ok(())
     }
 
-    pub fn update(&mut self) {
-        self.camera_controller.update_camera(&mut self.camera);
+    pub fn update(&mut self, player: &Player) {
+        self.camera.position = player.position;
+        self.camera.yaw = player.yaw;
+        self.camera.pitch = player.pitch;
+
         self.gpu.queue.write_buffer(
             &self.cam_buffer,
             0,

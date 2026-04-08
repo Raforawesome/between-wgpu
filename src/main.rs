@@ -36,20 +36,14 @@ impl ApplicationHandler<RenderState> for App {
         self.render_state = Some(state);
     }
 
-    // fn user_event(&mut self, event_loop: &ActiveEventLoop, event: State) {
-    //     self.state = Some(event);
-    // }
-
     fn device_event(
         &mut self,
         _event_loop: &ActiveEventLoop,
         _device_id: DeviceId,
         event: DeviceEvent,
     ) {
-        if let Some(state) = self.state.as_mut()
-            && let DeviceEvent::MouseMotion { delta } = event
-        {
-            state.handle_mouse_motion(delta.0, delta.1);
+        if let DeviceEvent::MouseMotion { delta } = event {
+            self.game_state.handle_mouse_motion(delta.0, delta.1);
         }
     }
 
@@ -86,7 +80,15 @@ impl ApplicationHandler<RenderState> for App {
                         ..
                     },
                 ..
-            } => render_state.handle_key(event_loop, code, key_state.is_pressed()),
+            } if !self
+                .game_state
+                .controller
+                .process_events(code, key_state.is_pressed()) =>
+            {
+                if let (winit::keyboard::KeyCode::Escape, true) = (code, key_state.is_pressed()) {
+                    event_loop.exit();
+                }
+            }
             _ => {}
         }
     }
