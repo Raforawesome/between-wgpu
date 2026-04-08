@@ -8,15 +8,11 @@ use texture::Texture;
 use vertex::Vertex;
 
 use wgpu::{BufferUsages, PipelineCompilationOptions, util::DeviceExt as _};
-use winit::{window::Window};
+use winit::window::Window;
 
 use std::sync::Arc;
 
-use crate::{
-    render::camera::Camera,
-    world::chunk_manager::ChunkManager,
-    world::player::Player,
-};
+use crate::{GameState, render::camera::Camera, world::chunk_manager::ChunkManager};
 
 /// Handles setting up a renderer with [wgpu]. Contains an abstraction for the GPU device.
 pub struct RenderState {
@@ -251,7 +247,8 @@ impl RenderState {
         Ok(())
     }
 
-    pub fn update(&mut self, player: &Player) {
+    pub fn update(&mut self, game_state: &GameState) {
+        let player = &game_state.player;
         self.camera.position = player.position;
         self.camera.yaw = player.yaw;
         self.camera.pitch = player.pitch;

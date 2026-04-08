@@ -62,7 +62,7 @@ impl ApplicationHandler<RenderState> for App {
             WindowEvent::Resized(size) => render_state.resize(size.width, size.height),
             WindowEvent::RedrawRequested => {
                 self.game_state.update();
-                render_state.update(&self.game_state.player);
+                render_state.update(&self.game_state);
 
                 match render_state.render() {
                     Ok(_) => {}
