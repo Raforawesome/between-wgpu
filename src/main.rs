@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use between_wgpu::render::RenderState;
+use between_wgpu::{GameState, render::RenderState};
 
 use thread_priority::set_current_thread_priority;
 use winit::{
@@ -14,7 +14,8 @@ use winit::{
 
 #[derive(Default)]
 pub struct App {
-    state: Option<RenderState>,
+    render_state: Option<RenderState>,
+    game_state: GameState,
 }
 
 impl ApplicationHandler<RenderState> for App {
@@ -32,7 +33,7 @@ impl ApplicationHandler<RenderState> for App {
         window.set_cursor_visible(false);
 
         let state = pollster::block_on(RenderState::new(window)).unwrap();
-        self.state = Some(state);
+        self.render_state = Some(state);
     }
 
     // fn user_event(&mut self, event_loop: &ActiveEventLoop, event: State) {
@@ -58,7 +59,7 @@ impl ApplicationHandler<RenderState> for App {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
-        let Some(render_state) = self.state.as_mut() else {
+        let Some(render_state) = self.render_state.as_mut() else {
             return;
         };
 
@@ -66,7 +67,8 @@ impl ApplicationHandler<RenderState> for App {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::Resized(size) => render_state.resize(size.width, size.height),
             WindowEvent::RedrawRequested => {
-                render_state.update();
+                self.game_state.update();
+                render_state.update(&self.game_state.player);
 
                 match render_state.render() {
                     Ok(_) => {}
