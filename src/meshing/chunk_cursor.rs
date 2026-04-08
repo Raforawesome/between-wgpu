@@ -42,6 +42,26 @@ impl<'a> ChunkCursor<'a> {
 
 // peek methods
 impl<'a> ChunkCursor<'a> {
+    pub fn peek(&self, dx: i32, dy: i32, dz: i32) -> Option<BlockType> {
+        let x = self.pos.x as i32 + dx;
+        let y = self.pos.y as i32 + dy;
+        let z = self.pos.z as i32 + dz;
+
+        if x < 0
+            || x > CHUNK_IDX as i32
+            || y < 0
+            || y > CHUNK_IDX as i32
+            || z < 0
+            || z > CHUNK_IDX as i32
+        {
+            None
+        } else {
+            let index =
+                x as usize + (y as usize) * CHUNK_SIZE + (z as usize) * CHUNK_SIZE * CHUNK_SIZE;
+            Some(self.blocks[index])
+        }
+    }
+
     pub fn block_above(&self) -> Option<BlockType> {
         if self.pos.y < CHUNK_IDX {
             Some(self.blocks[self.index + CHUNK_SIZE])
