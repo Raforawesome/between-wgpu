@@ -1,9 +1,9 @@
 pub mod chunk_cursor;
 pub mod faces;
 
-use glam::{IVec3, U8Vec3};
+use glam::IVec3;
 
-use crate::constants::{CHUNK_IDX, CHUNK_VOL};
+use crate::constants::{CHUNK_IDX, CHUNK_SIZEI, CHUNK_VOL};
 use crate::meshing::{chunk_cursor::ChunkCursor, faces::Face};
 use crate::render::vertex::Vertex;
 use crate::world::{
@@ -16,8 +16,11 @@ use faces::{
     add_back_face, add_bottom_face, add_front_face, add_left_face, add_right_face, add_top_face,
 };
 
-/// Stores (in order): vertices, normals, uvs, indices
-pub struct ChunkMeshData(Vec<[f32; 3]>, Vec<[f32; 3]>, Vec<[f32; 3]>, Vec<u32>);
+/// Stores vertices and indices
+pub struct ChunkMeshData {
+    pub vertices: Vec<Vertex>,
+    pub indices: Vec<u32>,
+}
 
 /// Stores neighbouring chunks, if they exist
 struct ChunkNeighbours<'a> {
@@ -40,29 +43,19 @@ impl ChunkManager {
             right: self.chunk_map().get(&(chunk.coords() + IVec3::X)),
         };
 
-        let ChunkMeshData(positions, _normals, uvs, indices) =
-            chunk_mesh_data(chunk, &chunk_neighbours);
+        let mesh_data = chunk_mesh_data(chunk, &chunk_neighbours);
 
-        let mut vertices = Vec::with_capacity(positions.len());
-        for (pos, uv) in positions.into_iter().zip(uvs) {
-            // convert vertices to world space
-            let [vx, vy, vz] = pos;
-            let vert_pos = U8Vec3::new(vx as u8, vy as u8, vz as u8);
-            let IVec3 { x, y, z } = chunk.chunk_to_world_space(vert_pos);
-
-            vertices.push(Vertex::from_arrays([x as f32, y as f32, z as f32], uv));
-        }
-
-        (vertices, indices)
+        (mesh_data.vertices, mesh_data.indices)
     }
 }
 
 fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData {
-    let vertices: Vec<[f32; 3]> = Vec::new();
-    let normals: Vec<[f32; 3]> = Vec::new();
-    let uvs: Vec<[f32; 3]> = Vec::new();
-    let indices: Vec<u32> = Vec::new();
-    let mut mesh_data = ChunkMeshData(vertices, normals, uvs, indices);
+    let mut mesh_data = ChunkMeshData {
+        vertices: Vec::new(),
+        indices: Vec::new(),
+    };
+
+    let base_pos = chunk.coords() * CHUNK_SIZEI;
 
     let blocks: &[BlockType; CHUNK_VOL] = chunk.blocks();
     let mut cursor: ChunkCursor = ChunkCursor::at_origin(blocks);
@@ -86,6 +79,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                     add_top_face(
                         &mut mesh_data,
                         pos,
+                        base_pos,
                         cursor.block_at_pos().texture_index(Face::Top),
                     );
                 }
@@ -100,6 +94,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                     add_bottom_face(
                         &mut mesh_data,
                         pos,
+                        base_pos,
                         cursor.block_at_pos().texture_index(Face::Bottom),
                     );
                 }
@@ -114,6 +109,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                     add_front_face(
                         &mut mesh_data,
                         pos,
+                        base_pos,
                         cursor.block_at_pos().texture_index(Face::Front),
                     );
                 }
@@ -128,6 +124,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                     add_back_face(
                         &mut mesh_data,
                         pos,
+                        base_pos,
                         cursor.block_at_pos().texture_index(Face::Back),
                     );
                 }
@@ -142,6 +139,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                     add_left_face(
                         &mut mesh_data,
                         pos,
+                        base_pos,
                         cursor.block_at_pos().texture_index(Face::Left),
                     );
                 }
@@ -156,6 +154,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                     add_right_face(
                         &mut mesh_data,
                         pos,
+                        base_pos,
                         cursor.block_at_pos().texture_index(Face::Right),
                     );
                 }
@@ -173,6 +172,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                     add_top_face(
                         &mut mesh_data,
                         pos,
+                        base_pos,
                         cursor.block_at_pos().texture_index(Face::Top),
                     );
                 }
@@ -187,6 +187,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                     add_bottom_face(
                         &mut mesh_data,
                         pos,
+                        base_pos,
                         cursor.block_at_pos().texture_index(Face::Bottom),
                     );
                 }
@@ -201,6 +202,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                     add_front_face(
                         &mut mesh_data,
                         pos,
+                        base_pos,
                         cursor.block_at_pos().texture_index(Face::Front),
                     );
                 }
@@ -215,6 +217,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                     add_back_face(
                         &mut mesh_data,
                         pos,
+                        base_pos,
                         cursor.block_at_pos().texture_index(Face::Back),
                     );
                 }
@@ -229,6 +232,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                     add_left_face(
                         &mut mesh_data,
                         pos,
+                        base_pos,
                         cursor.block_at_pos().texture_index(Face::Left),
                     );
                 }
@@ -243,6 +247,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                     add_right_face(
                         &mut mesh_data,
                         pos,
+                        base_pos,
                         cursor.block_at_pos().texture_index(Face::Right),
                     );
                 }
