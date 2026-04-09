@@ -17,6 +17,7 @@ impl Texture {
         let bytes_grass_side = include_bytes!("../../assets/game/grass_side.png");
         let bytes_dirt = include_bytes!("../../assets/game/dirt.png");
         let bytes_sand = include_bytes!("../../assets/game/sand.png");
+        let bytes_water = include_bytes!("../../assets/game/water.png");
 
         Self::from_bytes_array(
             &gpu.device,
@@ -29,7 +30,7 @@ impl Texture {
                 bytes_sand,       // 4: Sand
                 bytes_dirt,       // 5: Log (placeholder)
                 bytes_grass_top,  // 6: Leaf (placeholder)
-                bytes_sand,       // 7: Water (placeholder)
+                bytes_water,      // 7: Water
             ],
             Some("Block Texture Array"),
         )

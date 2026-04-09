@@ -56,7 +56,7 @@ impl Camera {
             // set aspect ratio to surface config
             aspect,
             // fov along y-axis
-            fovy: 45.0,
+            fovy: 50.0,
             // near plane of frustum
             znear: 0.1,
         }
