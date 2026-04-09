@@ -22,18 +22,17 @@ pub fn sample_density(x: f32, y: f32, z: f32) -> f32 {
 }
 
 pub fn density_to_block_type(density: f32, y: f32) -> BlockType {
-    if density > 0.0 {
-        if density < 0.05 {
-            BlockType::Grass
-        } else if density < 0.18 {
-            BlockType::Dirt
-        } else {
-            BlockType::Stone
+    match density {
+        0.00..0.05 => BlockType::Grass,
+        0.05..0.20 => BlockType::Dirt,
+        0.20.. => BlockType::Stone,
+        _ => {
+            if y < SEA_LEVEL {
+                BlockType::Water
+            } else {
+                BlockType::Air
+            }
         }
-    } else if y < SEA_LEVEL {
-        BlockType::Water
-    } else {
-        BlockType::Air
     }
 }
 
