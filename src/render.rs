@@ -137,8 +137,6 @@ impl RenderState {
                 }
             }
         }
-        // let chunk = chunk_man.get_or_generate_chunk((1, 5, -1).into());
-        // let (verts, indices) = chunk_man.mesh_chunk(&chunk);
 
         let vertex_buffer = gpu
             .device
