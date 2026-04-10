@@ -10,7 +10,7 @@ pub const BASE_HEIGHT: f32 = 80.0;
 pub const SEA_LEVEL: f32 = 72.0;
 pub const FREQ: f32 = 1.0 / 150.0;
 pub const AMPLITUDE: f32 = 1.0;
-pub const HEIGHT_GRADIENT: f32 = 25.0;
+pub const HEIGHT_GRADIENT: f32 = 30.0;
 
 // texture atlas (set to actual values of atlas)
 //
