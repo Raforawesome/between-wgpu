@@ -16,6 +16,7 @@ impl Texture {
         let bytes_grass_top = include_bytes!("../../assets/game/grass.png");
         let bytes_grass_side = include_bytes!("../../assets/game/grass_side.png");
         let bytes_dirt = include_bytes!("../../assets/game/dirt.png");
+        let bytes_stone = include_bytes!("../../assets/game/stone.png");
         let bytes_sand = include_bytes!("../../assets/game/sand.png");
         let bytes_water = include_bytes!("../../assets/game/water.png");
 
@@ -26,7 +27,7 @@ impl Texture {
                 bytes_grass_top,  // 0: Grass Top
                 bytes_grass_side, // 1: Grass Side
                 bytes_dirt,       // 2: Dirt / Grass Bottom
-                bytes_dirt,       // 3: Stone (placeholder)
+                bytes_stone,      // 3: Stone (placeholder)
                 bytes_sand,       // 4: Sand
                 bytes_dirt,       // 5: Log (placeholder)
                 bytes_grass_top,  // 6: Leaf (placeholder)
