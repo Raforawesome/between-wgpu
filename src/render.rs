@@ -9,12 +9,12 @@ use gpu::Gpu;
 use texture::Texture;
 use vertex::Vertex;
 
-use wgpu::{Buffer, BufferUsages, PipelineCompilationOptions, util::DeviceExt as _};
+use wgpu::{Buffer, PipelineCompilationOptions};
 use winit::window::Window;
 
 use std::sync::Arc;
 
-use crate::{GameState, HashMap, HashSet, world::chunk_manager::ChunkManager};
+use crate::{GameState, HashMap};
 
 /// Handles setting up a renderer with [wgpu]. Contains an abstraction for the GPU device.
 pub struct RenderState {
@@ -234,23 +234,25 @@ impl RenderState {
         let chunk_buffers = &mut self.chunk_buffers;
         let loaded = game_state.loader.loaded_chunks();
 
+        let mut spawned = 0;
         for chunk_pos in loaded {
-            // let chunk = chunk_man.get_or_generate_chunk((x, y, z).into());
-            // if chunk.is_empty() {
-            //     continue;
-            // };
-            // let (verts, indices) = chunk_man.mesh_chunk(&chunk);
-
             if chunk_buffers.contains_key(chunk_pos) {
                 continue;
             }
+
+            if spawned >= crate::constants::MAX_SPAWNS_PER_FRAME {
+                break;
+            }
+
             let chunk = chunk_man.get_or_generate_chunk(chunk_pos);
             if chunk.is_empty() {
                 continue;
             }
+
             let (verts, indices) = chunk_man.mesh_chunk(&chunk);
             let (vert_buffer, index_buffer) = self.gpu.create_chunk_buffers(verts, indices);
             chunk_buffers.insert(*chunk_pos, (vert_buffer, index_buffer));
+            spawned += 1;
         }
     }
 }

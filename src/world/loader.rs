@@ -12,6 +12,7 @@ const RENDER_VOLUME: usize =
 
 pub struct ChunkLoader {
     loaded: Vec<IVec3>,
+    last_chunk_pos: IVec3,
 }
 
 impl ChunkLoader {
@@ -20,8 +21,15 @@ impl ChunkLoader {
     }
 
     pub fn update(&mut self, player_pos: Vec3) {
+        let player_chunk_pos =
+            player_pos.floor().as_ivec3().div_euclid(IVec3::splat(CHUNK_SIZEI));
+
+        if !self.loaded.is_empty() && player_chunk_pos == self.last_chunk_pos {
+            return;
+        }
+
+        self.last_chunk_pos = player_chunk_pos;
         let mut queued = Vec::with_capacity(RENDER_VOLUME);
-        let player_chunk_pos = player_pos.floor().as_ivec3().div_euclid(IVec3::splat(CHUNK_SIZEI));
         let IVec3 { x, y, z } = player_chunk_pos;
 
         // index, x offset, y offset, z offset
@@ -45,6 +53,7 @@ impl Default for ChunkLoader {
     fn default() -> Self {
         ChunkLoader {
             loaded: Vec::with_capacity(RENDER_VOLUME),
+            last_chunk_pos: IVec3::splat(i32::MAX),
         }
     }
 }

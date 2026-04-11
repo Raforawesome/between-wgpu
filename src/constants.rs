@@ -12,15 +12,8 @@ pub const FREQ: f32 = 1.0 / 150.0;
 pub const AMPLITUDE: f32 = 1.0;
 pub const HEIGHT_GRADIENT: f32 = 30.0;
 
-// texture atlas (set to actual values of atlas)
-//
-// TODO: replace assets directory with a list of individual textures and generate
-// atlas at runtime
-pub const ATLAS_SIZE: usize = 4;
-pub const TILE_SIZE: usize = 16;
-
 // chunk rendering pipeline settings
-pub const VIEW_DISTANCE: i32 = 12;
+pub const VIEW_DISTANCE: i32 = 16;
 pub const VIEW_DISTANCE_Y: i32 = 4;
 pub const DESPAWN_DISTANCE: i32 = 14;
 pub const DESPAWN_DISTANCE_Y: i32 = 6;
@@ -41,7 +34,3 @@ pub const Y_INC: usize = CHUNK_SIZE * CHUNK_SIZE;
 pub const Z_INC: usize = Y_INC * CHUNK_SIZE;
 pub const Y_INC_IDX: usize = Y_INC - 1;
 pub const Z_INC_IDX: usize = Z_INC - 1;
-
-// texture atlas
-pub const TILE_STEP: f32 = 1.0 / ATLAS_SIZE as f32;
-pub const ATLAS_DIM: usize = TILE_SIZE * ATLAS_SIZE;

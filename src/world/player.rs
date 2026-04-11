@@ -42,7 +42,7 @@ pub struct PlayerController {
 
 impl Default for PlayerController {
     fn default() -> Self {
-        Self::new(0.5, (0.15, 0.1))
+        Self::new(1.0, (0.15, 0.1))
     }
 }
 
