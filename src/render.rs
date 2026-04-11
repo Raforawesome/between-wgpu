@@ -199,7 +199,10 @@ impl RenderState {
             render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
             render_pass.set_bind_group(1, &self.cam_bind_group, &[]);
 
-            for (vb, ib) in self.chunk_buffers.values() {
+            for chunk_pos in game_state.loader.loaded_chunks() {
+                let Some((vb, ib)) = self.chunk_buffers.get(chunk_pos) else {
+                    continue;
+                };
                 let idx_count = ib.size() as u32 / std::mem::size_of::<u32>() as u32;
 
                 render_pass.set_vertex_buffer(0, vb.slice(..));
