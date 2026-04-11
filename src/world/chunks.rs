@@ -1,7 +1,7 @@
 use glam::{IVec3, U8Vec3};
 
 use crate::{
-    constants::{CHUNK_SIZE, CHUNK_SIZEI, CHUNK_VOL},
+    constants::{CHUNK_SIZE, CHUNK_SIZEI, CHUNK_VOL, ChunkMask},
     world::block::BlockType,
 };
 
@@ -29,7 +29,7 @@ pub struct Chunk {
     pub coords: IVec3,
     pub blocks: [BlockType; CHUNK_VOL],
     pub dirty: bool,
-    pub solid_mask: [[u16; 16]; 16],
+    pub solid_mask: ChunkMask,
 }
 
 impl Chunk {

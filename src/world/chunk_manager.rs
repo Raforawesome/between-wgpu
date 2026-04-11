@@ -22,7 +22,7 @@ impl ChunkManager {
     pub fn generate_chunk(coords: &IVec3) -> Chunk {
         let IVec3 { x, y, z } = coords;
         let mut blocks = [BlockType::Air; CHUNK_VOL];
-        let mut solid_mask = [[0u16; 16]; 16];
+        let mut solid_mask = [[0; CHUNK_SIZE]; CHUNK_SIZE];
 
         // initial block {x, y, z}
         let (ibx, iby, ibz) = (x * CHUNK_SIZEI, y * CHUNK_SIZEI, z * CHUNK_SIZEI);
