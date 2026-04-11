@@ -3,16 +3,18 @@ pub mod gpu;
 pub mod texture;
 pub mod vertex;
 
+use camera::Camera;
+use glam::IVec3;
 use gpu::Gpu;
 use texture::Texture;
 use vertex::Vertex;
 
-use wgpu::{BufferUsages, PipelineCompilationOptions, util::DeviceExt as _};
+use wgpu::{Buffer, BufferUsages, PipelineCompilationOptions, util::DeviceExt as _};
 use winit::window::Window;
 
 use std::sync::Arc;
 
-use crate::{GameState, render::camera::Camera, world::chunk_manager::ChunkManager};
+use crate::{GameState, HashMap, world::chunk_manager::ChunkManager};
 
 /// Handles setting up a renderer with [wgpu]. Contains an abstraction for the GPU device.
 pub struct RenderState {
@@ -21,18 +23,14 @@ pub struct RenderState {
     gpu: Gpu,
     /// The render pipeline contains the buffers, shaders, and post-processing stages.
     render_pipeline: wgpu::RenderPipeline,
-    /// Stores a list of vertices to pass to the GPU.
-    vertex_buffer: wgpu::Buffer,
-    /// Stores a list of vertex indices to draw. Each pair of 3 represents one triangle.
-    index_buffer: wgpu::Buffer,
-    /// Number of indices to draw
-    index_count: u32,
+    /// Stores a list of chunk vertex & index buffers to pass to the GPU.
+    chunk_buffers: HashMap<IVec3, (Buffer, Buffer)>,
     /// Bind group for the diffuse texture array and sampler.
     diffuse_bind_group: wgpu::BindGroup,
     /// Camera for the scene.
     camera: Camera,
     /// Buffer for the camera matrix.
-    cam_buffer: wgpu::Buffer,
+    cam_buffer: Buffer,
     /// Bind group for the camera matrix.
     cam_bind_group: wgpu::BindGroup,
     /// Stores a texture to sample a pixel's 3D depth.
@@ -123,45 +121,28 @@ impl RenderState {
             });
 
         let chunk_man = ChunkManager::default();
-        let mut verts: Vec<Vertex> = vec![];
-        let mut indices: Vec<u32> = vec![];
+        let mut chunk_buffers = HashMap::default();
         for x in -16..=16 {
             for z in -16..=16 {
-                for y in 4..=5 {
+                for y in 4..=6 {
                     let chunk = chunk_man.get_or_generate_chunk((x, y, z).into());
-                    let (lv, li) = chunk_man.mesh_chunk(&chunk);
+                    if chunk.is_empty() {
+                        continue;
+                    };
+                    let (verts, indices) = chunk_man.mesh_chunk(&chunk);
 
-                    let base = verts.len() as u32;
-                    verts.extend_from_slice(&lv);
-                    indices.extend(li.iter().map(|i| base + *i));
+                    let (vert_buffer, index_buffer) = gpu.create_chunk_buffers(verts, indices);
+                    chunk_buffers.insert((x, y, z).into(), (vert_buffer, index_buffer));
                 }
             }
         }
-
-        let vertex_buffer = gpu
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("between vertex buffer"),
-                contents: bytemuck::cast_slice(&verts),
-                usage: BufferUsages::VERTEX,
-            });
-
-        let index_buffer = gpu
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("between index buffer"),
-                contents: bytemuck::cast_slice(&indices),
-                usage: BufferUsages::INDEX,
-            });
 
         Ok(Self {
             is_surface_configured: false,
             camera,
             gpu,
             render_pipeline,
-            vertex_buffer,
-            index_buffer,
-            index_count: indices.len() as u32,
+            chunk_buffers,
             diffuse_bind_group,
             cam_buffer,
             cam_bind_group,
@@ -233,10 +214,13 @@ impl RenderState {
             render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
             render_pass.set_bind_group(1, &self.cam_bind_group, &[]);
 
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+            for (vb, ib) in self.chunk_buffers.values() {
+                let idx_count = ib.size() as u32 / std::mem::size_of::<u32>() as u32;
 
-            render_pass.draw_indexed(0..self.index_count, 0, 0..1);
+                render_pass.set_vertex_buffer(0, vb.slice(..));
+                render_pass.set_index_buffer(ib.slice(..), wgpu::IndexFormat::Uint32);
+                render_pass.draw_indexed(0..idx_count, 0, 0..1);
+            }
         }
 
         self.gpu.queue.submit([encoder.finish()]);

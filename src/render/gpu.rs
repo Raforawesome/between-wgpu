@@ -1,7 +1,9 @@
 use anyhow::bail;
 use std::sync::Arc;
-use wgpu::{Instance, InstanceDescriptor};
+use wgpu::{Buffer, BufferUsages, Instance, InstanceDescriptor, SurfaceTexture, util::DeviceExt};
 use winit::window::Window;
+
+use crate::render::vertex::Vertex;
 
 pub struct Gpu {
     pub surface: wgpu::Surface<'static>,
@@ -90,7 +92,28 @@ impl Gpu {
         }
     }
 
-    pub fn get_surface_texture(&mut self) -> anyhow::Result<Option<wgpu::SurfaceTexture>> {
+    /// Uploads a chunk's vertex and index data to GPU buffers.
+    pub fn create_chunk_buffers(&self, verts: Vec<Vertex>, indices: Vec<u32>) -> (Buffer, Buffer) {
+        let vert_buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("between chunk vertex buffer"),
+                contents: bytemuck::cast_slice(&verts),
+                usage: BufferUsages::VERTEX,
+            });
+
+        let index_buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("between chunk index buffer"),
+                contents: bytemuck::cast_slice(&indices),
+                usage: BufferUsages::INDEX,
+            });
+
+        (vert_buffer, index_buffer)
+    }
+
+    pub fn get_surface_texture(&mut self) -> anyhow::Result<Option<SurfaceTexture>> {
         match self.surface.get_current_texture() {
             wgpu::CurrentSurfaceTexture::Success(surface_texture) => Ok(Some(surface_texture)),
             wgpu::CurrentSurfaceTexture::Suboptimal(surface_texture) => {
