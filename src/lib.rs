@@ -60,7 +60,10 @@ impl Default for GameState {
 impl GameState {
     /// Update the game state, optionally based on the last frame's render state.
     pub fn update(&mut self, render_state: &mut RenderState) {
+        // update player position based on player controller
         self.controller.update_player(&mut self.player);
+        // update loaded chunks based on player position
+        self.loader.update(self.player.position);
     }
 
     /// Handle mouse movement for camera rotation.

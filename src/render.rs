@@ -14,7 +14,7 @@ use winit::window::Window;
 
 use std::sync::Arc;
 
-use crate::{GameState, HashMap, world::chunk_manager::ChunkManager};
+use crate::{GameState, HashMap, HashSet, world::chunk_manager::ChunkManager};
 
 /// Handles setting up a renderer with [wgpu]. Contains an abstraction for the GPU device.
 pub struct RenderState {
@@ -120,22 +120,7 @@ impl RenderState {
                 multiview_mask: None, // not useful for this project
             });
 
-        let chunk_man = ChunkManager::default();
-        let mut chunk_buffers = HashMap::default();
-        for x in -16..=16 {
-            for z in -16..=16 {
-                for y in 4..=6 {
-                    let chunk = chunk_man.get_or_generate_chunk((x, y, z).into());
-                    if chunk.is_empty() {
-                        continue;
-                    };
-                    let (verts, indices) = chunk_man.mesh_chunk(&chunk);
-
-                    let (vert_buffer, index_buffer) = gpu.create_chunk_buffers(verts, indices);
-                    chunk_buffers.insert((x, y, z).into(), (vert_buffer, index_buffer));
-                }
-            }
-        }
+        let chunk_buffers = HashMap::default();
 
         Ok(Self {
             is_surface_configured: false,
@@ -229,7 +214,9 @@ impl RenderState {
         Ok(())
     }
 
-    pub fn update(&mut self, game_state: &GameState) {
+    pub fn update(&mut self, game_state: &mut GameState) {
+        self.update_chunk_buffers(game_state);
+
         let player = &game_state.player;
         self.camera.position = player.position;
         self.camera.yaw = player.yaw;
@@ -240,5 +227,30 @@ impl RenderState {
             0,
             bytemuck::bytes_of(&self.camera.build_view_projection_matrix()),
         );
+    }
+
+    pub fn update_chunk_buffers(&mut self, game_state: &mut GameState) {
+        let chunk_man = &game_state.chunk_man;
+        let chunk_buffers = &mut self.chunk_buffers;
+        let loaded = game_state.loader.loaded_chunks();
+
+        for chunk_pos in loaded {
+            // let chunk = chunk_man.get_or_generate_chunk((x, y, z).into());
+            // if chunk.is_empty() {
+            //     continue;
+            // };
+            // let (verts, indices) = chunk_man.mesh_chunk(&chunk);
+
+            if chunk_buffers.contains_key(chunk_pos) {
+                continue;
+            }
+            let chunk = chunk_man.get_or_generate_chunk(chunk_pos);
+            if chunk.is_empty() {
+                continue;
+            }
+            let (verts, indices) = chunk_man.mesh_chunk(&chunk);
+            let (vert_buffer, index_buffer) = self.gpu.create_chunk_buffers(verts, indices);
+            chunk_buffers.insert(*chunk_pos, (vert_buffer, index_buffer));
+        }
     }
 }

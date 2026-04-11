@@ -26,7 +26,7 @@ impl Vertex {
 
     /// Uses [std::mem::transmute] to form a [Vertex] struct with arrays of floats.
     /// This allows the method to be `const`. This method is not marked as unsafe since
-    /// the use of transmute is safe, as [Vec3] and [Vec3] are marked with `#[repr(C)]`.
+    /// the use of transmute is safe, as [Vec3] is marked with `#[repr(C)]`.
     pub const fn from_arrays(position: [f32; 3], tex_coords: [f32; 3]) -> Self {
         Self {
             position: unsafe { mem::transmute::<[f32; 3], Vec3>(position) },

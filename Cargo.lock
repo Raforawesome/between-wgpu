@@ -280,6 +280,7 @@ dependencies = [
  "fastrand",
  "glam",
  "image",
+ "itertools",
  "log",
  "noise-functions",
  "pollster",

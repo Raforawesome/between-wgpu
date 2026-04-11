@@ -19,7 +19,7 @@ pub struct ChunkManager {
 pub type ChunkRef<'a> = MapRef<'a, IVec3, Chunk>;
 impl ChunkManager {
     // private functions
-    pub fn generate_chunk(coords: IVec3) -> Chunk {
+    pub fn generate_chunk(coords: &IVec3) -> Chunk {
         let IVec3 { x, y, z } = coords;
         let mut blocks = [BlockType::Air; CHUNK_VOL];
         let mut solid_mask = [[0u16; 16]; 16];
@@ -42,7 +42,7 @@ impl ChunkManager {
         }
 
         Chunk {
-            coords,
+            coords: *coords,
             blocks,
             solid_mask,
             dirty: false,
@@ -96,9 +96,9 @@ impl ChunkManager {
         self.chunk_map.get(chunk_coords)
     }
 
-    pub fn get_or_generate_chunk<'a>(&'a self, chunk_coords: IVec3) -> ChunkRef<'a> {
+    pub fn get_or_generate_chunk<'a>(&'a self, chunk_coords: &IVec3) -> ChunkRef<'a> {
         self.chunk_map
-            .entry(chunk_coords)
+            .entry(*chunk_coords)
             .or_insert_with(|| Self::generate_chunk(chunk_coords))
             .downgrade()
     }
