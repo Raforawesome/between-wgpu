@@ -8,7 +8,9 @@ fn main() {
         let entry = entry.expect("Failed to read directory entry");
         let path = entry.path();
 
-        if path.extension().is_some_and(|ext| ext == "slang") {
+        if path.extension().is_some_and(|ext| ext == "slang")
+            && path.file_name().is_some_and(|n| n == "shader")
+        {
             let output = path.with_extension("wgsl");
 
             println!("cargo:rerun-if-changed={}", path.display());
