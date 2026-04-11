@@ -28,13 +28,11 @@ pub fn chunk_to_world_coords(chunk_coords: IVec3) -> IVec3 {
 pub struct Chunk {
     pub coords: IVec3,
     pub blocks: [BlockType; CHUNK_VOL],
+    pub dirty: bool,
+    pub solid_mask: [[u16; 16]; 16],
 }
 
 impl Chunk {
-    pub fn from_data(coords: IVec3, blocks: [BlockType; CHUNK_VOL]) -> Self {
-        Self { coords, blocks }
-    }
-
     pub fn get_block(&self, pos: U8Vec3) -> BlockType {
         self.blocks[linearize(pos)]
     }
@@ -53,5 +51,10 @@ impl Chunk {
             y: self.coords.y * CHUNK_SIZEI + chunk_coords.y as i32,
             z: self.coords.z * CHUNK_SIZEI + chunk_coords.z as i32,
         }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        let rows = self.solid_mask.iter().flatten().copied();
+        rows.reduce(|acc, row| acc | row).unwrap() == 0
     }
 }

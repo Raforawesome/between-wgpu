@@ -22,6 +22,7 @@ impl ChunkManager {
     pub fn generate_chunk(coords: IVec3) -> Chunk {
         let IVec3 { x, y, z } = coords;
         let mut blocks = [BlockType::Air; CHUNK_VOL];
+        let mut solid_mask = [[0u16; 16]; 16];
 
         // initial block {x, y, z}
         let (ibx, iby, ibz) = (x * CHUNK_SIZEI, y * CHUNK_SIZEI, z * CHUNK_SIZEI);
@@ -31,12 +32,21 @@ impl ChunkManager {
                     let (lx, ly, lz) = (bx - ibx, by - iby, bz - ibz);
                     let idx = linearize(U8Vec3::new(lx as u8, ly as u8, lz as u8));
 
-                    blocks[idx] = worldgen::get_block_type(bx as f32, by as f32, bz as f32);
+                    let block_type = worldgen::get_block_type(bx as f32, by as f32, bz as f32);
+                    blocks[idx] = block_type;
+                    if block_type != BlockType::Air {
+                        solid_mask[lz as usize][ly as usize] |= 1 << lx;
+                    }
                 }
             }
         }
 
-        Chunk { coords, blocks }
+        Chunk {
+            coords,
+            blocks,
+            solid_mask,
+            dirty: false,
+        }
     }
 
     // public functions
