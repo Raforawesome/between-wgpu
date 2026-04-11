@@ -34,7 +34,7 @@ pub fn run_update_loop(
     render_state.update(game_state);
 
     // draw new render state
-    render_state.render()
+    render_state.render(game_state)
 }
 
 /// Holds state for the game world, such as chunks and the player.

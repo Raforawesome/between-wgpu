@@ -142,7 +142,7 @@ impl RenderState {
         self.is_surface_configured = true;
     }
 
-    pub fn render(&mut self) -> anyhow::Result<()> {
+    pub fn render(&mut self, game_state: &mut GameState) -> anyhow::Result<()> {
         self.gpu.window.request_redraw();
         if !self.is_surface_configured {
             return Ok(());
