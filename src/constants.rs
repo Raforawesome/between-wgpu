@@ -2,6 +2,10 @@
  * Configurable Constants
  */
 
+// player
+pub const BASE_SPEED: f32 = 0.8;
+pub const SPRINT_MULTI: f32 = 5.0;
+
 // chunks
 pub const CHUNK_SIZE: usize = 16;
 
@@ -15,8 +19,6 @@ pub const HEIGHT_GRADIENT: f32 = 30.0;
 // chunk rendering pipeline settings
 pub const VIEW_DISTANCE: i32 = 16;
 pub const VIEW_DISTANCE_Y: i32 = 4;
-pub const DESPAWN_DISTANCE: i32 = 14;
-pub const DESPAWN_DISTANCE_Y: i32 = 6;
 pub const MAX_SPAWNS_PER_FRAME: usize = 256;
 
 /*
@@ -26,7 +28,7 @@ pub const MAX_SPAWNS_PER_FRAME: usize = 256;
 
 // chunk system
 pub const CHUNK_SIZEI: i32 = CHUNK_SIZE as i32;
-pub const CHUNK_VOL: usize = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
+pub const CHUNK_VOL: usize = CHUNK_SIZE.pow(3);
 pub const CHUNK_IDX: u8 = CHUNK_SIZE as u8 - 1;
 
 // chunk cursor offsets for array traversal

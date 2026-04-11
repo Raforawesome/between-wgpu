@@ -1,6 +1,9 @@
 use glam::Vec3;
 use winit::keyboard::KeyCode;
 
+use crate::constants::{BASE_SPEED, SPRINT_MULTI};
+
+/// Contains player-local information, such as world position and rotation.
 pub struct Player {
     pub position: Vec3,
     pub yaw: f32,
@@ -16,6 +19,8 @@ impl Player {
         }
     }
 
+    /// Returns the forward vector of the player. This returns a unit vector which
+    /// is looking in the direction of the player's orientation.
     pub fn forward(&self) -> Vec3 {
         let (pitch_sin, pitch_cos) = self.pitch.to_radians().sin_cos();
         let (yaw_sin, yaw_cos) = self.yaw.to_radians().sin_cos();
@@ -23,11 +28,14 @@ impl Player {
         (yaw_sin * pitch_cos, pitch_sin, yaw_cos * pitch_cos).into()
     }
 
+    /// Returns the right vector of the player. This returns a unit vector which
+    /// is perpendicular to the player's forward vector.
     pub fn right(&self) -> Vec3 {
         Vec3::Y.cross(self.forward()).normalize()
     }
 }
 
+/// Handles input for the player and contains controller-related state.
 pub struct PlayerController {
     speed: f32,
     sensitivity_x: f32,
@@ -42,7 +50,7 @@ pub struct PlayerController {
 
 impl Default for PlayerController {
     fn default() -> Self {
-        Self::new(1.0, (0.15, 0.1))
+        Self::new(BASE_SPEED, (0.15, 0.1))
     }
 }
 
@@ -88,12 +96,20 @@ impl PlayerController {
                 self.is_right_pressed = is_pressed;
                 true
             }
-            KeyCode::Space => {
+            KeyCode::KeyE | KeyCode::Space => {
                 self.is_up_pressed = is_pressed;
                 true
             }
-            KeyCode::ShiftLeft => {
+            KeyCode::KeyQ | KeyCode::ControlLeft => {
                 self.is_down_pressed = is_pressed;
+                true
+            }
+            KeyCode::ShiftLeft => {
+                if is_pressed {
+                    self.speed = BASE_SPEED * SPRINT_MULTI;
+                } else {
+                    self.speed = BASE_SPEED;
+                }
                 true
             }
             _ => false,
