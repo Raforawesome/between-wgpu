@@ -54,10 +54,12 @@ impl WorldState {
         // update loaded chunks based on player position
         self.loader.update(self.player.position);
 
+        // stop queueing chunks if we can no longer see them
         self.queued.retain(|pos| self.loader.contains(pos));
 
         // send necessary chunks through the gen & meshing pipeline
         for chunk_pos in self.loader.loaded_chunks() {
+            // if the chunk isn't already queued, and it either doesn't exist or needs remeshing
             if !self.queued.contains(chunk_pos)
                 && (self.chunk_man.get_chunk(chunk_pos).is_none() || self.dirty.contains(chunk_pos))
             {
@@ -69,6 +71,8 @@ impl WorldState {
         // update chunk buffers in the gpu/render world
         for (pos, mesh_data) in self.chunk_pipeline.result().try_iter() {
             let ChunkMeshData { vertices, indices } = mesh_data;
+
+            // skip empty data to avoid gpu crashes (gpu buffers can't be empty)
             if vertices.is_empty() || indices.is_empty() {
                 continue;
             }
