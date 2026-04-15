@@ -14,13 +14,13 @@ use winit::window::Window;
 
 use std::sync::Arc;
 
-use crate::{HashMap, WorldState};
+use crate::{HashMap, WorldState, constants::MAX_SPAWNS_PER_FRAME, meshing::ChunkMeshData};
 
 /// Handles setting up a renderer with [wgpu]. Contains an abstraction for the GPU device.
 pub struct RenderState {
-    is_surface_configured: bool,
     /// Abstraction for the physical GPU device which handles interfacing and surfaces.
-    gpu: Gpu,
+    pub gpu: Gpu,
+    is_surface_configured: bool,
     /// The render pipeline contains the buffers, shaders, and post-processing stages.
     render_pipeline: wgpu::RenderPipeline,
     /// Stores a list of chunk vertex & index buffers to pass to the GPU.
@@ -218,8 +218,7 @@ impl RenderState {
     }
 
     pub fn update(&mut self, game_state: &mut WorldState) {
-        self.update_chunk_buffers(game_state);
-
+        // update the camera buffer
         let player = &game_state.player;
         self.camera.position = player.position;
         self.camera.yaw = player.yaw;
@@ -231,31 +230,11 @@ impl RenderState {
             bytemuck::bytes_of(&self.camera.build_view_projection_matrix()),
         );
     }
+}
 
-    pub fn update_chunk_buffers(&mut self, game_state: &mut WorldState) {
-        let chunk_man = &game_state.chunk_man;
-        let chunk_buffers = &mut self.chunk_buffers;
-        let loaded = game_state.loader.loaded_chunks();
-
-        let mut spawned = 0;
-        for chunk_pos in loaded {
-            if chunk_buffers.contains_key(chunk_pos) {
-                continue;
-            }
-
-            if spawned >= crate::constants::MAX_SPAWNS_PER_FRAME {
-                break;
-            }
-
-            let chunk = chunk_man.get_or_generate_chunk(chunk_pos);
-            if chunk.is_empty() {
-                continue;
-            }
-
-            let ChunkMeshData { vertices, indices } = chunk_man.mesh_chunk(&chunk);
-            let (vert_buffer, index_buffer) = self.gpu.create_chunk_buffers(vertices, indices);
-            chunk_buffers.insert(*chunk_pos, (vert_buffer, index_buffer));
-            spawned += 1;
-        }
+// getters and setters
+impl RenderState {
+    pub fn chunk_buffers_mut(&mut self) -> &mut HashMap<IVec3, (Buffer, Buffer)> {
+        &mut self.chunk_buffers
     }
 }

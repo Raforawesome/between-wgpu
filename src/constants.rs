@@ -3,7 +3,7 @@
  */
 
 // player
-pub const BASE_SPEED: f32 = 0.8;
+pub const BASE_SPEED: f32 = 1.5;
 pub const SPRINT_MULTI: f32 = 5.0;
 
 // chunks
@@ -21,6 +21,7 @@ pub const HEIGHT_GRADIENT: f32 = 30.0;
 pub const VIEW_DISTANCE: i32 = 16;
 pub const VIEW_DISTANCE_Y: i32 = 4;
 pub const MAX_SPAWNS_PER_FRAME: usize = 64;
+pub const GEN_THREADS: usize = 2;
 
 /*
  * Derived Constants
