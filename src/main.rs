@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use between_wgpu::{GameState, render::RenderState, run_update_loop};
+use between_wgpu::{render::RenderState, run_update_loop, world::WorldState};
 
 use thread_priority::set_current_thread_priority;
 use winit::{
@@ -16,7 +16,7 @@ use winit::{
 /// Main app container for the winit event loop.
 pub struct App {
     render_state: Option<RenderState>,
-    game_state: GameState,
+    game_state: WorldState,
 }
 
 impl ApplicationHandler<RenderState> for App {

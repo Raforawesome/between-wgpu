@@ -14,7 +14,7 @@ use winit::window::Window;
 
 use std::sync::Arc;
 
-use crate::{GameState, HashMap};
+use crate::{HashMap, WorldState};
 
 /// Handles setting up a renderer with [wgpu]. Contains an abstraction for the GPU device.
 pub struct RenderState {
@@ -142,7 +142,7 @@ impl RenderState {
         self.is_surface_configured = true;
     }
 
-    pub fn render(&mut self, game_state: &mut GameState) -> anyhow::Result<()> {
+    pub fn render(&mut self, game_state: &mut WorldState) -> anyhow::Result<()> {
         self.gpu.window.request_redraw();
         if !self.is_surface_configured {
             return Ok(());
@@ -217,7 +217,7 @@ impl RenderState {
         Ok(())
     }
 
-    pub fn update(&mut self, game_state: &mut GameState) {
+    pub fn update(&mut self, game_state: &mut WorldState) {
         self.update_chunk_buffers(game_state);
 
         let player = &game_state.player;
@@ -232,7 +232,7 @@ impl RenderState {
         );
     }
 
-    pub fn update_chunk_buffers(&mut self, game_state: &mut GameState) {
+    pub fn update_chunk_buffers(&mut self, game_state: &mut WorldState) {
         let chunk_man = &game_state.chunk_man;
         let chunk_buffers = &mut self.chunk_buffers;
         let loaded = game_state.loader.loaded_chunks();
