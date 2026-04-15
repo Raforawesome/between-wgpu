@@ -252,8 +252,8 @@ impl RenderState {
                 continue;
             }
 
-            let (verts, indices) = chunk_man.mesh_chunk(&chunk);
-            let (vert_buffer, index_buffer) = self.gpu.create_chunk_buffers(verts, indices);
+            let ChunkMeshData { vertices, indices } = chunk_man.mesh_chunk(&chunk);
+            let (vert_buffer, index_buffer) = self.gpu.create_chunk_buffers(vertices, indices);
             chunk_buffers.insert(*chunk_pos, (vert_buffer, index_buffer));
             spawned += 1;
         }

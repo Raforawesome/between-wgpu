@@ -17,9 +17,16 @@ use faces::{
 };
 
 /// Stores vertices and indices
+#[derive(Default)]
 pub struct ChunkMeshData {
     pub vertices: Vec<Vertex>,
     pub indices: Vec<u32>,
+}
+
+impl From<ChunkMeshData> for (Vec<Vertex>, Vec<u32>) {
+    fn from(val: ChunkMeshData) -> Self {
+        (val.vertices, val.indices)
+    }
 }
 
 /// Stores neighbouring chunks, if they exist
@@ -33,7 +40,7 @@ struct ChunkNeighbours<'a> {
 }
 
 impl ChunkManager {
-    pub fn mesh_chunk(&self, chunk: &Chunk) -> (Vec<Vertex>, Vec<u32>) {
+    pub fn mesh_chunk(&self, chunk: &Chunk) -> ChunkMeshData {
         let chunk_neighbours = ChunkNeighbours {
             up: self.chunk_map().get(&(chunk.coords() + IVec3::Y)),
             down: self.chunk_map().get(&(chunk.coords() - IVec3::Y)),
@@ -43,9 +50,11 @@ impl ChunkManager {
             right: self.chunk_map().get(&(chunk.coords() + IVec3::X)),
         };
 
-        let mesh_data = chunk_mesh_data(chunk, &chunk_neighbours);
-
-        (mesh_data.vertices, mesh_data.indices)
+        if chunk.is_empty() {
+            ChunkMeshData::default()
+        } else {
+            chunk_mesh_data(chunk, &chunk_neighbours)
+        }
     }
 }
 
