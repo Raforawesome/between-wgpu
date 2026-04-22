@@ -27,8 +27,7 @@ impl Gpu {
         // the surface is the area in the window we can draw directly to
         let surface = instance.create_surface(window.clone()).unwrap();
 
-        // the adapter is a handle to the graphics card and contains information
-        // about it
+        // the adapter is a handle to the graphics card and contains information about it
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::default(),
@@ -44,7 +43,7 @@ impl Gpu {
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
                 label: None,
-                required_features: wgpu::Features::empty(),
+                required_features: wgpu::Features::POLYGON_MODE_LINE,
                 experimental_features: wgpu::ExperimentalFeatures::disabled(),
                 required_limits: wgpu::Limits::default(),
                 memory_hints: Default::default(),

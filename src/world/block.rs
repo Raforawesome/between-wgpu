@@ -6,7 +6,8 @@ use crate::meshing::faces::Face;
 #[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
 pub struct ChunkCoords(pub IVec3);
 
-#[derive(Copy, Clone, Eq, Hash, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, Hash, PartialEq, Debug, bytemuck::NoUninit)]
+#[repr(u8)]
 pub enum BlockType {
     Grass,
     Dirt,

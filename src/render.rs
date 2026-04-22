@@ -14,7 +14,7 @@ use winit::window::Window;
 
 use std::sync::Arc;
 
-use crate::{HashMap, WorldState, constants::MAX_SPAWNS_PER_FRAME, meshing::ChunkMeshData};
+use crate::{HashMap, WorldState};
 
 /// Handles setting up a renderer with [wgpu]. Contains an abstraction for the GPU device.
 pub struct RenderState {
