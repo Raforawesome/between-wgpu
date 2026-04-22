@@ -30,6 +30,7 @@ pub const GEN_THREADS: usize = 2;
 
 // chunk system
 pub const CHUNK_SIZEI: i32 = CHUNK_SIZE as i32;
+pub const CHUNK_SIZEU: u32 = CHUNK_SIZE as u32;
 pub const CHUNK_VOL: usize = CHUNK_SIZE.pow(3);
 pub const CHUNK_IDX: u8 = CHUNK_SIZE as u8 - 1;
 
