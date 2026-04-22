@@ -9,10 +9,9 @@ fn main() {
         let path = entry.path();
 
         if path.extension().is_some_and(|ext| ext == "slang")
-            && path.file_name().is_some_and(|n| n == "shader")
+            && path.file_stem().is_some_and(|n| n == "main_shader")
         {
-            let output = path.with_extension("wgsl");
-
+            let output = src_dir.join("shader.wgsl");
             println!("cargo:rerun-if-changed={}", path.display());
 
             let status = Command::new("slangc")
