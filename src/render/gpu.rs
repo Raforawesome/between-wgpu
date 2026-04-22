@@ -3,7 +3,7 @@ use std::sync::Arc;
 use wgpu::{Buffer, BufferUsages, Instance, InstanceDescriptor, SurfaceTexture, util::DeviceExt};
 use winit::window::Window;
 
-use crate::render::vertex::Vertex;
+use crate::render::{GpuChunk, vertex::Vertex};
 
 pub struct Gpu {
     pub surface: wgpu::Surface<'static>,
@@ -92,8 +92,8 @@ impl Gpu {
     }
 
     /// Uploads a chunk's vertex and index data to GPU buffers.
-    pub fn create_chunk_buffers(&self, verts: Vec<Vertex>, indices: Vec<u32>) -> (Buffer, Buffer) {
-        let vert_buffer = self
+    pub fn create_chunk_buffers(&self, verts: Vec<Vertex>, indices: Vec<u32>) -> GpuChunk {
+        let vert_buf = self
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("between chunk vertex buffer"),
@@ -101,7 +101,7 @@ impl Gpu {
                 usage: BufferUsages::VERTEX,
             });
 
-        let index_buffer = self
+        let idx_buf = self
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("between chunk index buffer"),
@@ -109,7 +109,7 @@ impl Gpu {
                 usage: BufferUsages::INDEX,
             });
 
-        (vert_buffer, index_buffer)
+        GpuChunk { vert_buf, idx_buf }
     }
 
     pub fn get_surface_texture(&mut self) -> anyhow::Result<Option<SurfaceTexture>> {

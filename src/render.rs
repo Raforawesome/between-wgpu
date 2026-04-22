@@ -16,6 +16,13 @@ use std::sync::Arc;
 
 use crate::{HashMap, WorldState};
 
+pub struct GpuChunk {
+    /// The GPU vertex buffer for the chunk.
+    vert_buf: Buffer,
+    /// The GPU index buffer for the chunk.
+    idx_buf: Buffer,
+}
+
 /// Handles setting up a renderer with [wgpu]. Contains an abstraction for the GPU device.
 pub struct RenderState {
     /// Abstraction for the physical GPU device which handles interfacing and surfaces.
@@ -24,7 +31,7 @@ pub struct RenderState {
     /// The render pipeline contains the buffers, shaders, and post-processing stages.
     render_pipeline: wgpu::RenderPipeline,
     /// Stores a list of chunk vertex & index buffers to pass to the GPU.
-    chunk_buffers: HashMap<IVec3, (Buffer, Buffer)>,
+    chunk_buffers: HashMap<IVec3, GpuChunk>,
     /// Bind group for the diffuse texture array and sampler.
     diffuse_bind_group: wgpu::BindGroup,
     /// Camera for the scene.
@@ -200,14 +207,14 @@ impl RenderState {
             render_pass.set_bind_group(1, &self.cam_bind_group, &[]);
 
             for chunk_pos in game_state.loader.loaded_chunks() {
-                let Some((vb, ib)) = self.chunk_buffers.get(chunk_pos) else {
-                    continue;
-                };
-                let idx_count = ib.size() as u32 / std::mem::size_of::<u32>() as u32;
+                if let Some(gpu_chunk) = self.chunk_buffers.get(chunk_pos) {
+                    let GpuChunk { vert_buf, idx_buf } = gpu_chunk;
+                    let idx_count = idx_buf.size() as u32 / std::mem::size_of::<u32>() as u32;
 
-                render_pass.set_vertex_buffer(0, vb.slice(..));
-                render_pass.set_index_buffer(ib.slice(..), wgpu::IndexFormat::Uint32);
-                render_pass.draw_indexed(0..idx_count, 0, 0..1);
+                    render_pass.set_vertex_buffer(0, vert_buf.slice(..));
+                    render_pass.set_index_buffer(idx_buf.slice(..), wgpu::IndexFormat::Uint32);
+                    render_pass.draw_indexed(0..idx_count, 0, 0..1);
+                };
             }
         }
 
@@ -234,7 +241,7 @@ impl RenderState {
 
 // getters and setters
 impl RenderState {
-    pub fn chunk_buffers_mut(&mut self) -> &mut HashMap<IVec3, (Buffer, Buffer)> {
+    pub fn chunk_buffers_mut(&mut self) -> &mut HashMap<IVec3, GpuChunk> {
         &mut self.chunk_buffers
     }
 }
