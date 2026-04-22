@@ -5,7 +5,7 @@ import bind_groups;
 /*
  * Vertex Shader
 */
-struct VertexInput {
+public struct VertexInput {
     float3 position : POSITION; // user defined semantics are given an index in order of declaration
     float3 tex_coords : UV;
 }
@@ -16,7 +16,7 @@ public struct VertexOutput {
 }
 
 [shader("vertex")]
-VertexOutput vs_main(VertexInput vert) {
+public VertexOutput vertex_shader(VertexInput vert) {
     VertexOutput out;
 
     out.tex_coords = vert.tex_coords;

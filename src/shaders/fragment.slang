@@ -7,7 +7,7 @@ import vertex;
  * Fragment Shader
 */
 [shader("fragment")]
-float4 fs_main(VertexOutput in) : SV_Target {
+public float4 fragment_shader(VertexOutput in) : SV_Target {
     let tex_array = bg.textures;
     let sampler = bg.sampler;
 
