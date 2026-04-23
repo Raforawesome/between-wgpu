@@ -60,8 +60,8 @@ impl ChunkManager {
 
 fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData {
     let mut mesh_data = ChunkMeshData {
-        vertices: Vec::new(),
-        indices: Vec::new(),
+        vertices: Vec::with_capacity(512),
+        indices: Vec::with_capacity(768),
     };
 
     let base_pos = chunk.coords() * CHUNK_SIZEI;
