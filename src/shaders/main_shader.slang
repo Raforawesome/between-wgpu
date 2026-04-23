@@ -13,16 +13,24 @@ public struct Camera {
     public float4x4 view_proj; // binding 0 contains camera matrix
 }
 
+// Bind group 2: per-chunk block-id texture
+public struct ChunkBlocks {
+    public Texture3D<uint> blocks; // binding 0 contains chunk-local block ids
+}
+
 // declare bind groups in incrementing order
 public ParameterBlock<TexBindGroup> bg; // bind group 0
 public ParameterBlock<Camera> camera;   // bind group 1
+public ParameterBlock<ChunkBlocks> chunk; // bind group 2
 
 /*
  * Vertex Shader
 */
 struct VertexInput {
     float3 position : POSITION; // user defined semantics are given an index in order of declaration
-    float3 tex_coords : UV;
+    float3 local_pos : LOCAL_POS;
+    float2 face_uv : UV;
+    uint face_id : FACE_ID;
 }
 
 public struct VertexOutput {
