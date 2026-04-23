@@ -171,6 +171,29 @@ impl Texture {
         ]
     }
 
+    pub const fn blocks_layout_desc() -> wgpu::BindGroupLayoutDescriptor<'static> {
+        wgpu::BindGroupLayoutDescriptor {
+            entries: &[BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: BindingType::Texture {
+                    multisampled: false,
+                    view_dimension: wgpu::TextureViewDimension::D3,
+                    sample_type: wgpu::TextureSampleType::Uint,
+                },
+                count: None,
+            }],
+            label: Some("chunk_blocks_bind_group_layout"),
+        }
+    }
+
+    pub const fn blocks_bind_entries<'a>(&'a self) -> [BindGroupEntry<'a>; 1] {
+        [BindGroupEntry {
+            binding: 0,
+            resource: BindingResource::TextureView(&self.view),
+        }]
+    }
+
     pub const DEPTH_FORMAT: TextureFormat = TextureFormat::Depth32Float;
 
     pub fn create_depth_texture(gpu: &Gpu) -> Self {
@@ -257,6 +280,18 @@ impl Gpu {
             layout,
             entries: &texture.bind_entries(),
             label: Some("diffuse_bind_group"),
+        })
+    }
+
+    pub fn create_blocks_bind_group(
+        &self,
+        texture: &Texture,
+        layout: &wgpu::BindGroupLayout,
+    ) -> wgpu::BindGroup {
+        self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout,
+            entries: &texture.blocks_bind_entries(),
+            label: Some("chunk_blocks_bind_group"),
         })
     }
 
