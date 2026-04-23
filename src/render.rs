@@ -38,6 +38,8 @@ pub struct RenderState {
     chunk_buffers: HashMap<IVec3, GpuChunk>,
     /// Bind group for the diffuse texture array and sampler.
     diffuse_bind_group: wgpu::BindGroup,
+    /// Layout for per-chunk block-id textures.
+    blocks_group_layout: wgpu::BindGroupLayout,
     /// Camera for the scene.
     camera: Camera,
     /// Buffer for the camera matrix.
@@ -55,8 +57,13 @@ impl RenderState {
 
         // set up texture array & texture bind group
         let texture_array = Texture::create_texture_array(&gpu);
-        let tex_group_layout = gpu.device.create_bind_group_layout(&Texture::layout_desc());
+        let tex_group_layout = gpu
+            .device
+            .create_bind_group_layout(&Texture::tex_layout_desc());
         let diffuse_bind_group = gpu.create_texture_bind_group(&texture_array, &tex_group_layout);
+        let blocks_group_layout = gpu
+            .device
+            .create_bind_group_layout(&Texture::blocks_layout_desc());
 
         // set up camera & camera bind group (creates camera buffer)
         let camera = Camera::new(
@@ -76,7 +83,11 @@ impl RenderState {
             .device
             .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("between render pipeline layout"),
-                bind_group_layouts: &[Some(&tex_group_layout), Some(&cam_group_layout)],
+                bind_group_layouts: &[
+                    Some(&tex_group_layout),
+                    Some(&cam_group_layout),
+                    Some(&blocks_group_layout),
+                ],
                 immediate_size: 0,
             });
 
@@ -140,6 +151,7 @@ impl RenderState {
             render_pipeline,
             chunk_buffers,
             diffuse_bind_group,
+            blocks_group_layout,
             cam_buffer,
             cam_bind_group,
             depth_texture,
@@ -212,11 +224,17 @@ impl RenderState {
 
             for chunk_pos in game_state.loader.loaded_chunks() {
                 if let Some(gpu_chunk) = self.chunk_buffers.get(chunk_pos) {
-                    let GpuChunk { vert_buf, idx_buf } = gpu_chunk;
+                    let GpuChunk {
+                        vert_buf,
+                        idx_buf,
+                        block_texture,
+                        block_bind_group,
+                    } = gpu_chunk;
                     let idx_count = idx_buf.size() as u32 / std::mem::size_of::<u32>() as u32;
 
                     render_pass.set_vertex_buffer(0, vert_buf.slice(..));
                     render_pass.set_index_buffer(idx_buf.slice(..), wgpu::IndexFormat::Uint32);
+                    render_pass.set_bind_group(2, block_bind_group, &[]);
                     render_pass.draw_indexed(0..idx_count, 0, 0..1);
                 };
             }
@@ -247,5 +265,9 @@ impl RenderState {
 impl RenderState {
     pub fn chunk_buffers_mut(&mut self) -> &mut HashMap<IVec3, GpuChunk> {
         &mut self.chunk_buffers
+    }
+
+    pub fn blocks_group_layout(&self) -> &wgpu::BindGroupLayout {
+        &self.blocks_group_layout
     }
 }
