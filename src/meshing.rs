@@ -23,9 +23,10 @@ pub struct ChunkMeshData {
     pub indices: Vec<u32>,
 }
 
-impl From<ChunkMeshData> for (Vec<Vertex>, Vec<u32>) {
-    fn from(val: ChunkMeshData) -> Self {
-        (val.vertices, val.indices)
+impl<'a> From<&'a ChunkMeshData> for (&'a [Vertex], &'a [u32]) {
+    fn from(val: &'a ChunkMeshData) -> Self {
+        let ChunkMeshData { vertices, indices } = val;
+        (vertices.as_slice(), indices.as_slice())
     }
 }
 
