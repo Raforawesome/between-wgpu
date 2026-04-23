@@ -174,14 +174,22 @@ impl<'a> ChunkCursor<'a> {
     }
 
     pub fn advance(&mut self) -> bool {
-        if self.index < Z_INC_IDX {
-            self.index += 1;
-            self.pos.x = (self.index % CHUNK_SIZE) as u8;
-            self.pos.y = ((self.index / CHUNK_SIZE) % CHUNK_SIZE) as u8;
-            self.pos.z = (self.index / Y_INC) as u8;
-            return true;
+        if self.index >= Z_INC_IDX {
+            return false;
         }
 
-        false
+        self.index += 1;
+        self.pos.x += 1;
+
+        if self.pos.x >= CHUNK_SIZE as u8 {
+            self.pos.x = 0;
+            self.pos.y += 1;
+            if self.pos.y >= CHUNK_SIZE as u8 {
+                self.pos.y = 0;
+                self.pos.z += 1;
+            }
+        }
+
+        true
     }
 }
