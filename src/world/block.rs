@@ -20,9 +20,9 @@ pub enum BlockType {
 }
 
 impl BlockType {
-    pub const fn texture_index(&self, face: Face) -> usize {
+    pub const fn texture_layer(self, face: Face) -> u32 {
         match self {
-            BlockType::Air => usize::MAX,
+            BlockType::Air => u32::MAX,
             BlockType::Grass => match face {
                 Face::Top => 0,
                 Face::Bottom => 2,

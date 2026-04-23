@@ -73,9 +73,15 @@ impl WorldState {
                 continue;
             }
 
-            let buffers = render_state.gpu.create_chunk_buffers(mesh_data);
-            let chunk_buffers = render_state.chunk_buffers_mut();
-            chunk_buffers.insert(pos, buffers);
+            if let Some(chunk) = self.chunk_man.get_chunk(&pos) {
+                let buffers = render_state.gpu.create_chunk_buffers(
+                    mesh_data,
+                    chunk.blocks(),
+                    render_state.blocks_group_layout(), // avoid recreating the same layout
+                );
+                let chunk_buffers = render_state.chunk_buffers_mut();
+                chunk_buffers.insert(pos, buffers);
+            }
         }
     }
 

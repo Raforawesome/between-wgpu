@@ -132,7 +132,7 @@ impl Texture {
      * for game textures.
      */
     /// Returns the layout descriptor for the texture bind group.
-    pub const fn layout_desc() -> wgpu::BindGroupLayoutDescriptor<'static> {
+    pub const fn tex_layout_desc() -> wgpu::BindGroupLayoutDescriptor<'static> {
         wgpu::BindGroupLayoutDescriptor {
             entries: &[
                 BindGroupLayoutEntry {
