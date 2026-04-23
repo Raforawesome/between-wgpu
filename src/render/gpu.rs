@@ -6,7 +6,11 @@ use wgpu::{
 };
 use winit::window::Window;
 
-use crate::{meshing::ChunkMeshData, render::GpuChunk};
+use crate::{
+    meshing::ChunkMeshData,
+    render::{GpuChunk, texture::Texture},
+    world::block::BlockType,
+};
 
 pub struct Gpu {
     pub surface: wgpu::Surface<'static>,
@@ -95,7 +99,12 @@ impl Gpu {
     }
 
     /// Uploads a chunk's vertex and index data to GPU buffers.
-    pub fn create_chunk_buffers(&self, mesh_data: ChunkMeshData) -> GpuChunk {
+    pub fn create_chunk_buffers(
+        &self,
+        mesh_data: ChunkMeshData,
+        blocks: &[BlockType],
+        blocks_layout: &wgpu::BindGroupLayout,
+    ) -> GpuChunk {
         let ChunkMeshData { vertices, indices } = &mesh_data;
 
         let vert_buf = self
@@ -114,7 +123,15 @@ impl Gpu {
                 usage: BufferUsages::INDEX,
             });
 
-        GpuChunk { vert_buf, idx_buf }
+        let block_texture = Texture::create_blocks_texture(self, blocks);
+        let block_bind_group = self.create_blocks_bind_group(&block_texture, blocks_layout);
+
+        GpuChunk {
+            vert_buf,
+            idx_buf,
+            block_texture,
+            block_bind_group,
+        }
     }
 
     pub fn get_surface_texture(&mut self) -> anyhow::Result<Option<SurfaceTexture>> {
