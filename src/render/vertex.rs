@@ -10,27 +10,23 @@ use wgpu::{VertexBufferLayout, VertexFormat, VertexStepMode};
 /// a vertex shader.
 pub struct Vertex {
     pub position: Vec3,
-    pub tex_coords: Vec3,
+    pub local_pos: Vec3,
+    pub face_uv: [f32; 2],
+    pub face_id: u32,
 }
 
 impl Vertex {
-    pub fn new(position: impl Into<Vec3>, tex_coords: impl Into<Vec3>) -> Self {
-        let position = position.into();
-        let tex_coords = tex_coords.into();
-
+    pub fn new(
+        position: Vec3,
+        local_pos: Vec3,
+        face_uv: [f32; 2],
+        face_id: u32,
+    ) -> Self {
         Self {
             position,
-            tex_coords,
-        }
-    }
-
-    /// Uses [std::mem::transmute] to form a [Vertex] struct with arrays of floats.
-    /// This allows the method to be `const`. This method is not marked as unsafe since
-    /// the use of transmute is safe, as [Vec3] is marked with `#[repr(C)]`.
-    pub const fn from_arrays(position: [f32; 3], tex_coords: [f32; 3]) -> Self {
-        Self {
-            position: unsafe { mem::transmute::<[f32; 3], Vec3>(position) },
-            tex_coords: unsafe { mem::transmute::<[f32; 3], Vec3>(tex_coords) },
+            local_pos,
+            face_uv,
+            face_id,
         }
     }
 }

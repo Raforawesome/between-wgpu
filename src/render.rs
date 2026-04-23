@@ -21,6 +21,10 @@ pub struct GpuChunk {
     vert_buf: Buffer,
     /// The GPU index buffer for the chunk.
     idx_buf: Buffer,
+    /// The GPU texture storing block ids for this chunk.
+    block_texture: Texture,
+    /// Bind group exposing the block-id volume to the shader.
+    block_bind_group: wgpu::BindGroup,
 }
 
 /// Handles setting up a renderer with [wgpu]. Contains an abstraction for the GPU device.
