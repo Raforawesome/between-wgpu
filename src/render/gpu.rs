@@ -1,9 +1,12 @@
 use anyhow::bail;
 use std::sync::Arc;
-use wgpu::{Buffer, BufferUsages, Instance, InstanceDescriptor, SurfaceTexture, util::DeviceExt};
+use wgpu::{
+    BufferUsages, CurrentSurfaceTexture, Instance, InstanceDescriptor, SurfaceTexture,
+    util::DeviceExt,
+};
 use winit::window::Window;
 
-use crate::render::{GpuChunk, vertex::Vertex};
+use crate::{meshing::ChunkMeshData, render::GpuChunk};
 
 pub struct Gpu {
     pub surface: wgpu::Surface<'static>,
@@ -92,12 +95,14 @@ impl Gpu {
     }
 
     /// Uploads a chunk's vertex and index data to GPU buffers.
-    pub fn create_chunk_buffers(&self, verts: Vec<Vertex>, indices: Vec<u32>) -> GpuChunk {
+    pub fn create_chunk_buffers(&self, mesh_data: ChunkMeshData) -> GpuChunk {
+        let ChunkMeshData { vertices, indices } = &mesh_data;
+
         let vert_buf = self
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("between chunk vertex buffer"),
-                contents: bytemuck::cast_slice(&verts),
+                contents: bytemuck::cast_slice(vertices),
                 usage: BufferUsages::VERTEX,
             });
 
@@ -105,7 +110,7 @@ impl Gpu {
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("between chunk index buffer"),
-                contents: bytemuck::cast_slice(&indices),
+                contents: bytemuck::cast_slice(indices),
                 usage: BufferUsages::INDEX,
             });
 
@@ -114,21 +119,21 @@ impl Gpu {
 
     pub fn get_surface_texture(&mut self) -> anyhow::Result<Option<SurfaceTexture>> {
         match self.surface.get_current_texture() {
-            wgpu::CurrentSurfaceTexture::Success(surface_texture) => Ok(Some(surface_texture)),
-            wgpu::CurrentSurfaceTexture::Suboptimal(surface_texture) => {
+            CurrentSurfaceTexture::Success(surface_texture) => Ok(Some(surface_texture)),
+            CurrentSurfaceTexture::Suboptimal(surface_texture) => {
                 self.surface.configure(&self.device, &self.config);
                 Ok(Some(surface_texture))
             }
             // skip these frames
-            wgpu::CurrentSurfaceTexture::Timeout
-            | wgpu::CurrentSurfaceTexture::Validation
-            | wgpu::CurrentSurfaceTexture::Occluded => Ok(None),
-            wgpu::CurrentSurfaceTexture::Outdated => {
+            CurrentSurfaceTexture::Timeout
+            | CurrentSurfaceTexture::Validation
+            | CurrentSurfaceTexture::Occluded => Ok(None),
+            CurrentSurfaceTexture::Outdated => {
                 // reconfigure outdated configuration then skip frame
                 self.surface.configure(&self.device, &self.config);
                 Ok(None)
             }
-            wgpu::CurrentSurfaceTexture::Lost => {
+            CurrentSurfaceTexture::Lost => {
                 // device and resources lost, just bail
                 bail!("lost device");
             }

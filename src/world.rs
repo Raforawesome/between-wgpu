@@ -12,9 +12,7 @@ use loader::ChunkLoader;
 use player::{Player, PlayerController};
 use std::sync::Arc;
 
-use crate::{
-    HashSet, meshing::ChunkMeshData, render::RenderState, world::pipeline::ChunkGenPipeline,
-};
+use crate::{HashSet, render::RenderState, world::pipeline::ChunkGenPipeline};
 
 use winit::{event::ElementState, keyboard::KeyCode};
 
@@ -70,14 +68,12 @@ impl WorldState {
 
         // update chunk buffers in the gpu/render world
         for (pos, mesh_data) in self.chunk_pipeline.result().try_iter() {
-            let ChunkMeshData { vertices, indices } = mesh_data;
-
             // skip empty data to avoid gpu crashes (gpu buffers can't be empty)
-            if vertices.is_empty() || indices.is_empty() {
+            if mesh_data.vertices.is_empty() || mesh_data.indices.is_empty() {
                 continue;
             }
 
-            let buffers = render_state.gpu.create_chunk_buffers(vertices, indices);
+            let buffers = render_state.gpu.create_chunk_buffers(mesh_data);
             let chunk_buffers = render_state.chunk_buffers_mut();
             chunk_buffers.insert(pos, buffers);
         }
