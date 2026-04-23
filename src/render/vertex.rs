@@ -44,11 +44,24 @@ impl Vertex {
                     shader_location: 0,
                     format: VertexFormat::Float32x3,
                 },
-                // attribute descriptor for tex_coords (field 1)
+                // attribute descriptor for local_pos (field 1)
                 wgpu::VertexAttribute {
                     offset: mem::size_of::<Vec3>() as wgpu::BufferAddress,
                     shader_location: 1,
                     format: VertexFormat::Float32x3,
+                },
+                // attribute descriptor for face_uv (field 2)
+                wgpu::VertexAttribute {
+                    offset: (mem::size_of::<Vec3>() * 2) as wgpu::BufferAddress,
+                    shader_location: 2,
+                    format: VertexFormat::Float32x2,
+                },
+                // attribute descriptor for face_id (field 3)
+                wgpu::VertexAttribute {
+                    offset: (mem::size_of::<Vec3>() * 2 + mem::size_of::<[f32; 2]>())
+                        as wgpu::BufferAddress,
+                    shader_location: 3,
+                    format: VertexFormat::Uint32,
                 },
             ],
         }
