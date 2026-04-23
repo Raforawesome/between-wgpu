@@ -35,17 +35,54 @@ struct VertexInput {
 
 public struct VertexOutput {
     float4 clip_position : SV_Position;
-    public float3 tex_coords : UV;
+    public float3 local_pos : LOCAL_POS;
+    public float2 face_uv : UV;
+    nointerpolation public uint face_id : FACE_ID;
 }
 
 [shader("vertex")]
 VertexOutput vs_main(VertexInput vert) {
     VertexOutput out;
 
-    out.tex_coords = vert.tex_coords;
+    out.local_pos = vert.local_pos;
+    out.face_uv = vert.face_uv;
+    out.face_id = vert.face_id;
     out.clip_position = mul(camera.view_proj, float4(vert.position, 1.0));
 
     return out;
+}
+
+float3 face_bias(uint face_id) {
+    switch (face_id) {
+        case 0: return float3(0.0, -0.001, 0.0);
+        case 1: return float3(0.0, 0.001, 0.0);
+        case 2: return float3(0.001, 0.0, 0.0);
+        case 3: return float3(-0.001, 0.0, 0.0);
+        case 4: return float3(0.0, 0.0, 0.001);
+        default: return float3(0.0, 0.0, -0.001);
+    }
+}
+
+/**
+ * Maps a generic Block ID and a Face ID to a specific texture layer in the atlas.
+ * This is the GPU-side equivalent of the old CPU-side BlockType::texture_layer logic.
+ */
+int atlas_layer(uint block_id, uint face_id) {
+    switch (block_id) {
+        case 0: // Grass Block
+            switch (face_id) {
+                case 0: return 0;  // Top Face (Grass Texture)
+                case 1: return 2;  // Bottom Face (Dirt Texture)
+                default: return 1; // Side Faces (Grass-Side Texture)
+            }
+        case 1: return 2; // Dirt Block
+        case 2: return 3; // Stone Block
+        case 3: return 7; // Water Block
+        case 5: return 4; // Sand Block
+        case 6: return 5; // Log Block
+        case 7: return 6; // Leaf Block
+        default: return 0; // Fallback to Layer 0
+    }
 }
 
 /*
@@ -56,5 +93,18 @@ float4 fs_main(VertexOutput in) : SV_Target {
     let tex_array = bg.textures;
     let sampler = bg.sampler;
 
-    return tex_array.Sample(sampler, in.tex_coords);
+    // calculate the 3D coordinate of the current block
+    // apply 'face_bias' to nudge the coordinate inward, ensuring we don't
+    // sample the wrong block due to floating-point error at face boundary
+    let voxel_coords = in.local_pos + face_bias(in.face_id);
+    let voxel = int3(clamp(floor(voxel_coords), 0.0, 15.0));
+
+    // look up the raw Block ID from the per-chunk 3D blocktype texture
+    let block_id = chunk.blocks.Load(int4(voxel, 0)).x; // .x is equivalent to .r (red)
+
+    // resolve the specific texture layer index for this block type and face
+    let layer = atlas_layer(block_id, in.face_id);
+
+    // sample the color from the 2D Texture Array using the UVs and the resolved layer
+    return tex_array.Sample(sampler, float3(in.face_uv, layer));
 }
