@@ -4,7 +4,7 @@ pub mod faces;
 use glam::IVec3;
 
 use crate::constants::{CHUNK_IDX, CHUNK_SIZEI, CHUNK_VOL};
-use crate::meshing::{chunk_cursor::ChunkCursor, faces::Face};
+use crate::meshing::chunk_cursor::ChunkCursor;
 use crate::render::vertex::Vertex;
 use crate::world::{
     block::BlockType,
@@ -85,12 +85,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                         .as_deref()
                         .is_none_or(|c| c.get_block(pos.with_y(0)) == BlockType::Air),
                 } {
-                    add_top_face(
-                        &mut mesh_data,
-                        pos,
-                        base_pos,
-                        cursor.block_at_pos().texture_index(Face::Top),
-                    );
+                    add_top_face(&mut mesh_data, pos, base_pos);
                 }
 
                 if match cursor.block_below() {
@@ -100,12 +95,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                         .as_deref()
                         .is_none_or(|c| c.get_block(pos.with_y(CHUNK_IDX)) == BlockType::Air),
                 } {
-                    add_bottom_face(
-                        &mut mesh_data,
-                        pos,
-                        base_pos,
-                        cursor.block_at_pos().texture_index(Face::Bottom),
-                    );
+                    add_bottom_face(&mut mesh_data, pos, base_pos);
                 }
 
                 if match cursor.block_front() {
@@ -115,12 +105,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                         .as_deref()
                         .is_none_or(|c| c.get_block(pos.with_z(0)) == BlockType::Air),
                 } {
-                    add_front_face(
-                        &mut mesh_data,
-                        pos,
-                        base_pos,
-                        cursor.block_at_pos().texture_index(Face::Front),
-                    );
+                    add_front_face(&mut mesh_data, pos, base_pos);
                 }
 
                 if match cursor.block_back() {
@@ -130,12 +115,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                         .as_deref()
                         .is_none_or(|c| c.get_block(pos.with_z(CHUNK_IDX)) == BlockType::Air),
                 } {
-                    add_back_face(
-                        &mut mesh_data,
-                        pos,
-                        base_pos,
-                        cursor.block_at_pos().texture_index(Face::Back),
-                    );
+                    add_back_face(&mut mesh_data, pos, base_pos);
                 }
 
                 if match cursor.block_left() {
@@ -145,12 +125,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                         .as_deref()
                         .is_none_or(|c| c.get_block(pos.with_x(CHUNK_IDX)) == BlockType::Air),
                 } {
-                    add_left_face(
-                        &mut mesh_data,
-                        pos,
-                        base_pos,
-                        cursor.block_at_pos().texture_index(Face::Left),
-                    );
+                    add_left_face(&mut mesh_data, pos, base_pos);
                 }
 
                 if match cursor.block_right() {
@@ -160,12 +135,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                         .as_deref()
                         .is_none_or(|c| c.get_block(pos.with_x(0)) == BlockType::Air),
                 } {
-                    add_right_face(
-                        &mut mesh_data,
-                        pos,
-                        base_pos,
-                        cursor.block_at_pos().texture_index(Face::Right),
-                    );
+                    add_right_face(&mut mesh_data, pos, base_pos);
                 }
             }
             _ => {
@@ -178,12 +148,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                         .as_deref()
                         .is_none_or(|c| c.get_block(pos.with_y(0)).is_clear()),
                 } {
-                    add_top_face(
-                        &mut mesh_data,
-                        pos,
-                        base_pos,
-                        cursor.block_at_pos().texture_index(Face::Top),
-                    );
+                    add_top_face(&mut mesh_data, pos, base_pos);
                 }
 
                 if match cursor.block_below() {
@@ -193,12 +158,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                         .as_deref()
                         .is_none_or(|c| c.get_block(pos.with_y(CHUNK_IDX)).is_clear()),
                 } {
-                    add_bottom_face(
-                        &mut mesh_data,
-                        pos,
-                        base_pos,
-                        cursor.block_at_pos().texture_index(Face::Bottom),
-                    );
+                    add_bottom_face(&mut mesh_data, pos, base_pos);
                 }
 
                 if match cursor.block_front() {
@@ -208,12 +168,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                         .as_deref()
                         .is_none_or(|c| c.get_block(pos.with_z(0)).is_clear()),
                 } {
-                    add_front_face(
-                        &mut mesh_data,
-                        pos,
-                        base_pos,
-                        cursor.block_at_pos().texture_index(Face::Front),
-                    );
+                    add_front_face(&mut mesh_data, pos, base_pos);
                 }
 
                 if match cursor.block_back() {
@@ -223,12 +178,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                         .as_deref()
                         .is_none_or(|c| c.get_block(pos.with_z(CHUNK_IDX)).is_clear()),
                 } {
-                    add_back_face(
-                        &mut mesh_data,
-                        pos,
-                        base_pos,
-                        cursor.block_at_pos().texture_index(Face::Back),
-                    );
+                    add_back_face(&mut mesh_data, pos, base_pos);
                 }
 
                 if match cursor.block_left() {
@@ -238,12 +188,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                         .as_deref()
                         .is_none_or(|c| c.get_block(pos.with_x(CHUNK_IDX)).is_clear()),
                 } {
-                    add_left_face(
-                        &mut mesh_data,
-                        pos,
-                        base_pos,
-                        cursor.block_at_pos().texture_index(Face::Left),
-                    );
+                    add_left_face(&mut mesh_data, pos, base_pos);
                 }
 
                 if match cursor.block_right() {
@@ -253,12 +198,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &ChunkNeighbours) -> ChunkMeshData
                         .as_deref()
                         .is_none_or(|c| c.get_block(pos.with_x(0)).is_clear()),
                 } {
-                    add_right_face(
-                        &mut mesh_data,
-                        pos,
-                        base_pos,
-                        cursor.block_at_pos().texture_index(Face::Right),
-                    );
+                    add_right_face(&mut mesh_data, pos, base_pos);
                 }
             }
         }

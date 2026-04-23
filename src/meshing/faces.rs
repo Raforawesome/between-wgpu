@@ -1,11 +1,10 @@
 #![allow(clippy::too_many_arguments)]
-use std::ops::Add;
-
 use crate::meshing::ChunkMeshData;
 use crate::render::vertex::Vertex;
 use glam::{IVec3, U8Vec3, Vec3};
 
 #[derive(Copy, Clone)]
+#[repr(u32)]
 pub enum Face {
     Top,
     Bottom,
@@ -26,6 +25,14 @@ impl Face {
             Face::Front => [0.0, 0.0, 1.0],
         }
     }
+
+    pub const fn shader_id(self) -> u32 {
+        self as u32
+    }
+}
+
+fn world_pos(chunk_pos: IVec3, pos: U8Vec3) -> Vec3 {
+    (chunk_pos + pos.as_ivec3()).as_vec3()
 }
 
 /*
