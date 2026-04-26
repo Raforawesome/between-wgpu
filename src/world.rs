@@ -12,7 +12,11 @@ use loader::ChunkLoader;
 use player::{Player, PlayerController};
 use std::sync::Arc;
 
-use crate::{HashSet, render::RenderState, world::pipeline::ChunkGenPipeline};
+use crate::{
+    HashSet,
+    render::RenderState,
+    world::{chunks::Chunk, pipeline::ChunkGenPipeline},
+};
 
 use winit::{event::ElementState, keyboard::KeyCode};
 
@@ -52,24 +56,14 @@ impl WorldState {
         // update loaded chunks based on player position
         self.loader.update(self.player.position);
 
-        // stop queueing chunks if we can no longer see them
-        self.queued.retain(|pos| self.loader.contains(pos));
-
-        // send necessary chunks through the gen & meshing pipeline
-        for chunk_pos in self.loader.loaded_chunks() {
-            // if the chunk isn't already queued, and it either doesn't exist or needs remeshing
-            if !self.queued.contains(chunk_pos)
-                && (self.chunk_man.get_chunk(chunk_pos).is_none() || self.dirty.contains(chunk_pos))
-            {
-                self.queued.insert(*chunk_pos);
-                self.chunk_pipeline.request(*chunk_pos);
-            }
-        }
-
-        // update chunk buffers in the gpu/render world
+        // process results FIRST to allow dirty chunks to be re-queued in the same frame
+        // and to remove empty meshes from the gpu world
         for (pos, mesh_data) in self.chunk_pipeline.result().try_iter() {
-            // skip empty data to avoid gpu crashes (gpu buffers can't be empty)
+            self.queued.remove(&pos);
+
+            // if mesh is empty, remove old buffer and skip
             if mesh_data.vertices.is_empty() || mesh_data.indices.is_empty() {
+                render_state.chunk_buffers_mut().remove(&pos);
                 continue;
             }
 
@@ -77,10 +71,34 @@ impl WorldState {
                 let buffers = render_state.gpu.create_chunk_buffers(
                     mesh_data,
                     chunk.blocks(),
-                    render_state.blocks_group_layout(), // avoid recreating the same layout
+                    render_state.blocks_group_layout(),
                 );
-                let chunk_buffers = render_state.chunk_buffers_mut();
-                chunk_buffers.insert(pos, buffers);
+                render_state.chunk_buffers_mut().insert(pos, buffers);
+            }
+        }
+
+        // stop queueing chunks if we can no longer see them
+        self.queued.retain(|pos| self.loader.contains(pos));
+        // clean up dirty flags for chunks that are out of range
+        self.dirty.retain(|pos| self.loader.contains(pos));
+
+        // send necessary chunks through the gen & meshing pipeline
+        for chunk_pos in self.loader.loaded_chunks() {
+            // make sure chunk isn't already in-flight
+            if !self.queued.contains(chunk_pos) {
+                // if this is the first time generating the chunk, mark neighbours as dirty
+                if self.chunk_man.get_chunk(chunk_pos).is_none() {
+                    self.queued.insert(*chunk_pos);
+                    self.dirty.extend(Chunk::neighbours_pos_list_at(*chunk_pos));
+                    // don't remove self from dirty yet, ensure we remesh after neighbors load
+                    self.chunk_pipeline.request(*chunk_pos);
+                }
+                // otherwise if the chunk is being remeshed
+                else if self.dirty.contains(chunk_pos) {
+                    self.queued.insert(*chunk_pos);
+                    self.dirty.remove(chunk_pos);
+                    self.chunk_pipeline.request(*chunk_pos);
+                }
             }
         }
     }

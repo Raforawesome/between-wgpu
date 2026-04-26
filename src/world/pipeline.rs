@@ -10,7 +10,6 @@ pub struct ChunkGenPipeline {
     // if its already generated it just needs remeshing
     request_tx: Sender<IVec3>,
     result_rx: Receiver<(IVec3, ChunkMeshData)>,
-    chunk_man: Arc<ChunkManager>,
 }
 
 impl ChunkGenPipeline {
@@ -35,7 +34,6 @@ impl ChunkGenPipeline {
         Self {
             request_tx,
             result_rx,
-            chunk_man,
         }
     }
 
