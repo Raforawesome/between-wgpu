@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use glam::{IVec3, Vec3};
 use itertools::Itertools as _;
 
@@ -6,9 +8,9 @@ use crate::{
     constants::{CHUNK_SIZEI, VIEW_DISTANCE, VIEW_DISTANCE_Y},
 };
 
-const RENDER_RANGE_X: std::ops::Range<i32> = -VIEW_DISTANCE..VIEW_DISTANCE;
-const RENDER_RANGE_Y: std::ops::Range<i32> = -VIEW_DISTANCE_Y..VIEW_DISTANCE_Y;
-const RENDER_RANGE_Z: std::ops::Range<i32> = -VIEW_DISTANCE..VIEW_DISTANCE;
+const RENDER_RANGE_X: Range<i32> = -VIEW_DISTANCE..VIEW_DISTANCE;
+const RENDER_RANGE_Y: Range<i32> = -VIEW_DISTANCE_Y..VIEW_DISTANCE_Y;
+const RENDER_RANGE_Z: Range<i32> = -VIEW_DISTANCE..VIEW_DISTANCE;
 
 pub struct ChunkLoader {
     loaded: HashSet<IVec3>,
