@@ -57,4 +57,26 @@ impl Chunk {
         let rows = self.solid_mask.iter().flatten().copied();
         rows.reduce(|acc, row| acc | row).unwrap() == 0
     }
+
+    pub fn neighbours_pos_list(&self) -> [IVec3; 6] {
+        [
+            IVec3::new(self.coords.x - 1, self.coords.y, self.coords.z),
+            IVec3::new(self.coords.x + 1, self.coords.y, self.coords.z),
+            IVec3::new(self.coords.x, self.coords.y - 1, self.coords.z),
+            IVec3::new(self.coords.x, self.coords.y + 1, self.coords.z),
+            IVec3::new(self.coords.x, self.coords.y, self.coords.z - 1),
+            IVec3::new(self.coords.x, self.coords.y, self.coords.z + 1),
+        ]
+    }
+
+    pub fn neighbours_pos_list_at(coords: IVec3) -> [IVec3; 6] {
+        [
+            IVec3::new(coords.x - 1, coords.y, coords.z),
+            IVec3::new(coords.x + 1, coords.y, coords.z),
+            IVec3::new(coords.x, coords.y - 1, coords.z),
+            IVec3::new(coords.x, coords.y + 1, coords.z),
+            IVec3::new(coords.x, coords.y, coords.z - 1),
+            IVec3::new(coords.x, coords.y, coords.z + 1),
+        ]
+    }
 }
