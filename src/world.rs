@@ -56,13 +56,16 @@ impl WorldState {
         // update loaded chunks based on player position
         self.loader.update(self.player.position);
 
-        // process results FIRST to allow dirty chunks to be re-queued in the same frame
+        // process results first to allow dirty chunks to be re-queued in the same frame
         // and to remove empty meshes from the gpu world
         for (pos, mesh_data) in self.chunk_pipeline.result().try_iter() {
             self.queued.remove(&pos);
 
-            // if mesh is empty, remove old buffer and skip
+            // if mesh is empty
             if mesh_data.vertices.is_empty() || mesh_data.indices.is_empty() {
+                // remove the chunk's buffer if it exists and we determine it's empty
+                // this prevents chunks that are remeshed, and now have no visible faces,
+                // from sticking around
                 render_state.chunk_buffers_mut().remove(&pos);
                 continue;
             }
