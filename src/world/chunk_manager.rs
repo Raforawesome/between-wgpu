@@ -8,18 +8,19 @@ use crate::{
         block::BlockType,
         chunks::{Chunk, linearize},
     },
-    worldgen,
+    worldgen::DensitySampler,
 };
 
 #[derive(Default)]
-pub struct ChunkManager {
+pub struct ChunkManager<S: DensitySampler> {
     chunk_map: DashMap<IVec3, Chunk>,
+    density_sampler: S,
 }
 
 pub type ChunkRef<'a> = MapRef<'a, IVec3, Chunk>;
-impl ChunkManager {
+impl<S: DensitySampler> ChunkManager<S> {
     // private functions
-    pub fn generate_chunk(coords: &IVec3) -> Chunk {
+    pub fn generate_chunk(&self, coords: &IVec3) -> Chunk {
         let IVec3 { x, y, z } = coords;
         let mut blocks = [BlockType::Air; CHUNK_VOL];
         let mut solid_mask = [[0; CHUNK_SIZE]; CHUNK_SIZE];
@@ -32,7 +33,9 @@ impl ChunkManager {
                     let (lx, ly, lz) = (bx - ibx, by - iby, bz - ibz);
                     let idx = linearize(U8Vec3::new(lx as u8, ly as u8, lz as u8));
 
-                    let block_type = worldgen::get_block_type(bx as f32, by as f32, bz as f32);
+                    let block_type = self
+                        .density_sampler
+                        .get_block_type(bx as f32, by as f32, bz as f32);
                     blocks[idx] = block_type;
                     if block_type != BlockType::Air {
                         solid_mask[lz as usize][ly as usize] |= 1 << lx;
@@ -99,7 +102,7 @@ impl ChunkManager {
     pub fn get_or_generate_chunk<'a>(&'a self, chunk_coords: &IVec3) -> ChunkRef<'a> {
         self.chunk_map
             .entry(*chunk_coords)
-            .or_insert_with(|| Self::generate_chunk(chunk_coords))
+            .or_insert_with(|| self.generate_chunk(chunk_coords))
             .downgrade()
     }
 

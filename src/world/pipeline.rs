@@ -3,7 +3,10 @@ use std::sync::Arc;
 use crossbeam_channel::{Receiver, Sender};
 use glam::IVec3;
 
-use crate::{constants::GEN_THREADS, meshing::ChunkMeshData, world::chunk_manager::ChunkManager};
+use crate::{
+    constants::GEN_THREADS, meshing::ChunkMeshData, world::chunk_manager::ChunkManager,
+    worldgen::DensitySampler,
+};
 
 pub struct ChunkGenPipeline {
     // takes a chunk position and whether it's already generated
@@ -13,7 +16,7 @@ pub struct ChunkGenPipeline {
 }
 
 impl ChunkGenPipeline {
-    pub fn create(chunk_man: Arc<ChunkManager>) -> Self {
+    pub fn create<S: DensitySampler>(chunk_man: Arc<ChunkManager<S>>) -> Self {
         let (request_tx, request_rx) = crossbeam_channel::unbounded();
         let (result_tx, result_rx) = crossbeam_channel::unbounded();
 

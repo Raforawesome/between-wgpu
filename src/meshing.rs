@@ -11,6 +11,7 @@ use crate::world::{
     chunk_manager::{ChunkManager, ChunkRef},
     chunks::Chunk,
 };
+use crate::worldgen::DensitySampler;
 
 use faces::{
     add_back_face, add_bottom_face, add_front_face, add_left_face, add_right_face, add_top_face,
@@ -40,7 +41,7 @@ struct ChunkNeighbours<'a> {
     right: Option<ChunkRef<'a>>,
 }
 
-impl ChunkManager {
+impl<S: DensitySampler> ChunkManager<S> {
     pub fn mesh_chunk(&self, chunk: &Chunk) -> ChunkMeshData {
         let chunk_neighbours = ChunkNeighbours {
             up: self.chunk_map().get(&(chunk.coords() + IVec3::Y)),

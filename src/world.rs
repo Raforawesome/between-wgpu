@@ -15,6 +15,7 @@ use crate::{
     HashSet,
     render::RenderState,
     world::{chunks::Chunk, pipeline::ChunkGenPipeline},
+    worldgen::simplex::SimplexGen,
 };
 
 use winit::{event::ElementState, keyboard::KeyCode};
@@ -22,7 +23,7 @@ use winit::{event::ElementState, keyboard::KeyCode};
 /// Holds state for the game world, such as chunks and the player.
 /// This is kept separate from the [RenderState].
 pub struct WorldState {
-    pub chunk_man: Arc<ChunkManager>,
+    pub chunk_man: Arc<ChunkManager<SimplexGen>>,
     pub loader: ChunkLoader,
     pub player: Player,
     pub controller: PlayerController,
