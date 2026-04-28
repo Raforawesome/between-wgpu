@@ -109,4 +109,12 @@ impl<S: DensitySampler> ChunkManager<S> {
     pub fn chunk_iter(&self) -> impl Iterator<Item = RefMulti<'_, IVec3, Chunk>> {
         self.chunk_map.iter()
     }
+
+    // density sampler related methods
+    pub fn new_with_seed(seed: i32) -> Self {
+        Self {
+            chunk_map: DashMap::default(),
+            density_sampler: S::with_seed(seed),
+        }
+    }
 }

@@ -34,7 +34,9 @@ pub struct WorldState {
 
 impl Default for WorldState {
     fn default() -> Self {
-        let chunk_man = Arc::new(ChunkManager::default());
+        let seed = fastrand::i32(..);
+        let chunk_man = Arc::new(ChunkManager::new_with_seed(seed));
+
         Self {
             chunk_pipeline: ChunkGenPipeline::create(chunk_man.clone()),
             chunk_man,

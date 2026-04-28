@@ -227,8 +227,8 @@ impl RenderState {
                     let GpuChunk {
                         vert_buf,
                         idx_buf,
-                        block_texture,
                         block_bind_group,
+                        .. // we dont need block_texture since only the gpu uses it
                     } = gpu_chunk;
                     let idx_count = idx_buf.size() as u32 / std::mem::size_of::<u32>() as u32;
 
