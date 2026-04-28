@@ -1,46 +1,19 @@
-use std::sync::LazyLock;
-
-use noise_functions::Noise;
-
-use crate::constants::{AMPLITUDE, BASE_HEIGHT, FREQ, HEIGHT_GRADIENT, SEA_LEVEL};
 use crate::world::block::BlockType;
 
-static SEED: LazyLock<i32> = LazyLock::new(|| fastrand::i32(..));
+pub mod simplex;
 
-pub fn get_y(x: f32, z: f32) -> f32 {
-    let noise = noise_functions::Simplex
-        .fbm(5, 0.5, 2.0)
-        .seed(42)
-        .frequency(FREQ)
-        .sample2([x, z]);
-    (noise * AMPLITUDE + BASE_HEIGHT).floor()
-}
+/// A trait which represents any struct that lets you sample a density value
+/// for an (x, y, z) coordinate. This could be a generator or an interpolator
+/// wrapping a generator. `'static` here implies that the implementing member
+/// should not contain any non-`'static` references and remain valid for `'static`.
+pub trait DensitySampler: Default + Send + Sync + 'static {
+    fn with_seed(seed: i32) -> Self;
 
-pub fn sample_density(x: f32, y: f32, z: f32) -> f32 {
-    let noise = noise_functions::OpenSimplex2s
-        .fbm(3, 0.5, 2.0)
-        .seed(*SEED)
-        .frequency(FREQ)
-        .sample3([x, y, z]);
-    (noise * AMPLITUDE) - (y - BASE_HEIGHT) / HEIGHT_GRADIENT
-}
+    fn sample_density(&self, x: f32, y: f32, z: f32) -> f32;
+    fn density_to_block_type(&self, density: f32, y: f32) -> BlockType;
 
-pub fn density_to_block_type(density: f32, y: f32) -> BlockType {
-    match density {
-        0.00..0.06 => BlockType::Grass,
-        0.06..0.20 => BlockType::Dirt,
-        0.20.. => BlockType::Stone,
-        _ => {
-            if y < SEA_LEVEL {
-                BlockType::Water
-            } else {
-                BlockType::Air
-            }
-        }
+    fn get_block_type(&self, x: f32, y: f32, z: f32) -> BlockType {
+        let density = self.sample_density(x, y, z);
+        self.density_to_block_type(density, y)
     }
-}
-
-pub fn get_block_type(x: f32, y: f32, z: f32) -> BlockType {
-    let density = sample_density(x, y, z);
-    density_to_block_type(density, y)
 }
