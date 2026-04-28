@@ -4,7 +4,6 @@ pub mod chunks;
 pub mod loader;
 pub mod pipeline;
 pub mod player;
-pub mod worldgen;
 
 use chunk_manager::ChunkManager;
 use glam::IVec3;

@@ -7,8 +7,8 @@ use crate::{
     world::{
         block::BlockType,
         chunks::{Chunk, linearize},
-        worldgen,
     },
+    worldgen,
 };
 
 #[derive(Default)]

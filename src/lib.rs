@@ -6,6 +6,7 @@ pub mod constants;
 pub mod meshing;
 pub mod render;
 pub mod world;
+pub mod worldgen;
 
 use world::WorldState;
 
