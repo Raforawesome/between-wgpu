@@ -16,6 +16,7 @@ use std::sync::Arc;
 
 use crate::{HashMap, WorldState};
 
+#[allow(unused)] // uniform buffers are only accessed gpu side
 pub struct GpuChunk {
     /// The GPU vertex buffer for the chunk.
     vert_buf: Buffer,
