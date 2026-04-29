@@ -44,7 +44,6 @@ fn world_pos(chunk_pos: IVec3, pos: U8Vec3) -> Vec3 {
 
 pub fn add_top_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_pos: IVec3) {
     let wp = world_pos(chunk_pos, pos);
-    let lp = pos.as_vec3();
 
     let v1_id = chunk_mesh_data.vertices.len() as u32;
     let v2_id = v1_id + 1;
@@ -55,25 +54,21 @@ pub fn add_top_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_pos:
 
     chunk_mesh_data.vertices.push(Vertex::new(
         wp + Vec3::new(0.0, 1.0, 1.0),
-        lp + Vec3::new(0.0, 1.0, 1.0),
         [0.0, 1.0],
         f_id,
     ));
     chunk_mesh_data.vertices.push(Vertex::new(
         wp + Vec3::new(1.0, 1.0, 1.0),
-        lp + Vec3::new(1.0, 1.0, 1.0),
         [1.0, 1.0],
         f_id,
     ));
     chunk_mesh_data.vertices.push(Vertex::new(
         wp + Vec3::new(1.0, 1.0, 0.0),
-        lp + Vec3::new(1.0, 1.0, 0.0),
         [1.0, 0.0],
         f_id,
     ));
     chunk_mesh_data.vertices.push(Vertex::new(
         wp + Vec3::new(0.0, 1.0, 0.0),
-        lp + Vec3::new(0.0, 1.0, 0.0),
         [0.0, 0.0],
         f_id,
     ));
@@ -88,7 +83,6 @@ pub fn add_top_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_pos:
 
 pub fn add_bottom_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_pos: IVec3) {
     let wp = world_pos(chunk_pos, pos);
-    let lp = pos.as_vec3();
 
     let v1_id = chunk_mesh_data.vertices.len() as u32;
     let v2_id = v1_id + 1;
@@ -99,25 +93,21 @@ pub fn add_bottom_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_p
 
     chunk_mesh_data.vertices.push(Vertex::new(
         wp + Vec3::new(0.0, 0.0, 1.0),
-        lp + Vec3::new(0.0, 0.0, 1.0),
         [0.0, 1.0],
         f_id,
     ));
     chunk_mesh_data.vertices.push(Vertex::new(
         wp + Vec3::new(1.0, 0.0, 1.0),
-        lp + Vec3::new(1.0, 0.0, 1.0),
         [1.0, 1.0],
         f_id,
     ));
     chunk_mesh_data.vertices.push(Vertex::new(
         wp + Vec3::new(1.0, 0.0, 0.0),
-        lp + Vec3::new(1.0, 0.0, 0.0),
         [1.0, 0.0],
         f_id,
     ));
     chunk_mesh_data.vertices.push(Vertex::new(
         wp + Vec3::new(0.0, 0.0, 0.0),
-        lp + Vec3::new(0.0, 0.0, 0.0),
         [0.0, 0.0],
         f_id,
     ));
@@ -132,7 +122,6 @@ pub fn add_bottom_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_p
 
 pub fn add_front_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_pos: IVec3) {
     let wp = world_pos(chunk_pos, pos);
-    let lp = pos.as_vec3();
 
     let v1_id = chunk_mesh_data.vertices.len() as u32;
     let v2_id = v1_id + 1;
@@ -143,25 +132,21 @@ pub fn add_front_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_po
 
     chunk_mesh_data.vertices.push(Vertex::new(
         wp + Vec3::new(0.0, 0.0, 1.0),
-        lp + Vec3::new(0.0, 0.0, 1.0),
         [0.0, 1.0],
         f_id,
     ));
     chunk_mesh_data.vertices.push(Vertex::new(
         wp + Vec3::new(1.0, 0.0, 1.0),
-        lp + Vec3::new(1.0, 0.0, 1.0),
         [1.0, 1.0],
         f_id,
     ));
     chunk_mesh_data.vertices.push(Vertex::new(
         wp + Vec3::new(1.0, 1.0, 1.0),
-        lp + Vec3::new(1.0, 1.0, 1.0),
         [1.0, 0.0],
         f_id,
     ));
     chunk_mesh_data.vertices.push(Vertex::new(
         wp + Vec3::new(0.0, 1.0, 1.0),
-        lp + Vec3::new(0.0, 1.0, 1.0),
         [0.0, 0.0],
         f_id,
     ));
@@ -176,7 +161,6 @@ pub fn add_front_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_po
 
 pub fn add_back_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_pos: IVec3) {
     let wp = world_pos(chunk_pos, pos);
-    let lp = pos.as_vec3();
 
     let v1_id = chunk_mesh_data.vertices.len() as u32;
     let v2_id = v1_id + 1;
@@ -187,22 +171,19 @@ pub fn add_back_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_pos
 
     chunk_mesh_data
         .vertices
-        .push(Vertex::new(wp, lp, [0.0, 1.0], f_id));
+        .push(Vertex::new(wp, [0.0, 1.0], f_id));
     chunk_mesh_data.vertices.push(Vertex::new(
         wp + Vec3::new(1.0, 0.0, 0.0),
-        lp + Vec3::new(1.0, 0.0, 0.0),
         [1.0, 1.0],
         f_id,
     ));
     chunk_mesh_data.vertices.push(Vertex::new(
         wp + Vec3::new(1.0, 1.0, 0.0),
-        lp + Vec3::new(1.0, 1.0, 0.0),
         [1.0, 0.0],
         f_id,
     ));
     chunk_mesh_data.vertices.push(Vertex::new(
         wp + Vec3::new(0.0, 1.0, 0.0),
-        lp + Vec3::new(0.0, 1.0, 0.0),
         [0.0, 0.0],
         f_id,
     ));
@@ -217,7 +198,6 @@ pub fn add_back_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_pos
 
 pub fn add_left_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_pos: IVec3) {
     let wp = world_pos(chunk_pos, pos);
-    let lp = pos.as_vec3();
 
     let v1_id = chunk_mesh_data.vertices.len() as u32;
     let v2_id = v1_id + 1;
@@ -228,22 +208,19 @@ pub fn add_left_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_pos
 
     chunk_mesh_data
         .vertices
-        .push(Vertex::new(wp, lp, [0.0, 1.0], f_id));
+        .push(Vertex::new(wp, [0.0, 1.0], f_id));
     chunk_mesh_data.vertices.push(Vertex::new(
         wp + Vec3::new(0.0, 0.0, 1.0),
-        lp + Vec3::new(0.0, 0.0, 1.0),
         [1.0, 1.0],
         f_id,
     ));
     chunk_mesh_data.vertices.push(Vertex::new(
         wp + Vec3::new(0.0, 1.0, 1.0),
-        lp + Vec3::new(0.0, 1.0, 1.0),
         [1.0, 0.0],
         f_id,
     ));
     chunk_mesh_data.vertices.push(Vertex::new(
         wp + Vec3::new(0.0, 1.0, 0.0),
-        lp + Vec3::new(0.0, 1.0, 0.0),
         [0.0, 0.0],
         f_id,
     ));
@@ -258,7 +235,6 @@ pub fn add_left_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_pos
 
 pub fn add_right_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_pos: IVec3) {
     let wp = world_pos(chunk_pos, pos);
-    let lp = pos.as_vec3();
 
     let v1_id = chunk_mesh_data.vertices.len() as u32;
     let v2_id = v1_id + 1;
@@ -269,25 +245,21 @@ pub fn add_right_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_po
 
     chunk_mesh_data.vertices.push(Vertex::new(
         wp + Vec3::new(1.0, 0.0, 0.0),
-        lp + Vec3::new(1.0, 0.0, 0.0),
         [0.0, 1.0],
         f_id,
     ));
     chunk_mesh_data.vertices.push(Vertex::new(
         wp + Vec3::new(1.0, 0.0, 1.0),
-        lp + Vec3::new(1.0, 0.0, 1.0),
         [1.0, 1.0],
         f_id,
     ));
     chunk_mesh_data.vertices.push(Vertex::new(
         wp + Vec3::new(1.0, 1.0, 1.0),
-        lp + Vec3::new(1.0, 1.0, 1.0),
         [1.0, 0.0],
         f_id,
     ));
     chunk_mesh_data.vertices.push(Vertex::new(
         wp + Vec3::new(1.0, 1.0, 0.0),
-        lp + Vec3::new(1.0, 1.0, 0.0),
         [0.0, 0.0],
         f_id,
     ));
