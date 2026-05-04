@@ -1,4 +1,5 @@
 use anyhow::bail;
+use glam::IVec3;
 use std::sync::Arc;
 use wgpu::{
     BufferUsages, CurrentSurfaceTexture, Instance, InstanceDescriptor, SurfaceTexture,
@@ -7,6 +8,7 @@ use wgpu::{
 use winit::window::Window;
 
 use crate::{
+    constants::CHUNK_SIZEI,
     meshing::ChunkMeshData,
     render::{GpuChunk, texture::Texture},
     world::block::BlockType,
@@ -101,6 +103,7 @@ impl Gpu {
     /// Uploads a chunk's vertex and index data to GPU buffers.
     pub fn create_chunk_buffers(
         &self,
+        pos: IVec3,
         mesh_data: ChunkMeshData,
         blocks: &[BlockType],
         blocks_layout: &wgpu::BindGroupLayout,
@@ -124,13 +127,43 @@ impl Gpu {
             });
 
         let block_texture = Texture::create_blocks_texture(self, blocks);
-        let block_bind_group = self.create_blocks_bind_group(&block_texture, blocks_layout);
+
+        // Create uniform buffer for world_pos
+        let world_pos = (pos * CHUNK_SIZEI).as_vec3();
+        let world_pos_buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("chunk_world_pos_buffer"),
+                // align data to 16 bytes because wgpu requires it
+                contents: bytemuck::bytes_of(&glam::Vec4::new(
+                    world_pos.x,
+                    world_pos.y,
+                    world_pos.z,
+                    1.0,
+                )),
+                usage: wgpu::BufferUsages::UNIFORM,
+            });
+
+        let chunk_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: blocks_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: world_pos_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(&block_texture.view),
+                },
+            ],
+            label: Some("chunk_blocks_bind_group"),
+        });
 
         GpuChunk {
             vert_buf,
             idx_buf,
             block_texture,
-            block_bind_group,
+            chunk_bind_group,
         }
     }
 

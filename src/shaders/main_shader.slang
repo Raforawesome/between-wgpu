@@ -13,9 +13,10 @@ public struct Camera {
     public float4x4 view_proj; // binding 0 contains camera matrix
 }
 
-// Bind group 2: per-chunk block-id texture
+// Bind group 2: per-chunk block-id texture and world position
 public struct ChunkBlocks {
-    public Texture3D<uint> blocks; // binding 0 contains chunk-local block ids
+    public Texture3D<uint> blocks; // binding 0: chunk-local block ids
+    public float3 world_pos;       // binding 1: chunk world origin
 }
 
 // declare bind groups in incrementing order
@@ -28,7 +29,6 @@ public ParameterBlock<ChunkBlocks> chunk; // bind group 2
 */
 struct VertexInput {
     float3 position : POSITION; // user defined semantics are given an index in order of declaration
-    float3 local_pos : LOCAL_POS;
     float2 face_uv : UV;
     uint face_id : FACE_ID;
 }
@@ -37,14 +37,14 @@ public struct VertexOutput {
     float4 clip_position : SV_Position;
     public float3 local_pos : LOCAL_POS;
     public float2 face_uv : UV;
-    nointerpolation public uint face_id : FACE_ID;
+    /* nointerpolation */ public uint face_id : FACE_ID;
 }
 
 [shader("vertex")]
 VertexOutput vs_main(VertexInput vert) {
     VertexOutput out;
 
-    out.local_pos = vert.local_pos;
+    out.local_pos = vert.position - chunk.world_pos;
     out.face_uv = vert.face_uv;
     out.face_id = vert.face_id;
     out.clip_position = mul(camera.view_proj, float4(vert.position, 1.0));

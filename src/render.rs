@@ -25,7 +25,7 @@ pub struct GpuChunk {
     /// The GPU texture storing block ids for this chunk.
     block_texture: Texture,
     /// Bind group exposing the block-id volume to the shader.
-    block_bind_group: wgpu::BindGroup,
+    chunk_bind_group: wgpu::BindGroup,
 }
 
 /// Handles setting up a renderer with [wgpu]. Contains an abstraction for the GPU device.
@@ -228,7 +228,7 @@ impl RenderState {
                     let GpuChunk {
                         vert_buf,
                         idx_buf,
-                        block_bind_group,
+                        chunk_bind_group: block_bind_group,
                         .. // we dont need block_texture since only the gpu uses it
                     } = gpu_chunk;
                     let idx_count = idx_buf.size() as u32 / std::mem::size_of::<u32>() as u32;

@@ -74,6 +74,7 @@ impl WorldState {
 
             if let Some(chunk) = self.chunk_man.get_chunk(&pos) {
                 let buffers = render_state.gpu.create_chunk_buffers(
+                    pos,
                     mesh_data,
                     chunk.blocks(),
                     render_state.blocks_group_layout(),
