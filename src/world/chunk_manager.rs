@@ -1,4 +1,4 @@
-use dashmap::mapref::{multiple::RefMulti, one::Ref as MapRef};
+use dashmap::mapref::{entry::Entry, multiple::RefMulti, one::Ref as MapRef};
 use glam::{IVec3, U8Vec3};
 
 use crate::{
@@ -100,10 +100,20 @@ impl<S: DensitySampler> ChunkManager<S> {
     }
 
     pub fn get_or_generate_chunk<'a>(&'a self, chunk_coords: &IVec3) -> ChunkRef<'a> {
+        if self.chunk_map.get(chunk_coords).is_none() {
+            let generated = self.generate_chunk(chunk_coords);
+
+            match self.chunk_map.entry(*chunk_coords) {
+                Entry::Occupied(_) => {}
+                Entry::Vacant(entry) => {
+                    entry.insert(generated);
+                }
+            }
+        }
+
         self.chunk_map
-            .entry(*chunk_coords)
-            .or_insert_with(|| self.generate_chunk(chunk_coords))
-            .downgrade()
+            .get(chunk_coords)
+            .expect("chunk should exist after generation")
     }
 
     pub fn chunk_iter(&self) -> impl Iterator<Item = RefMulti<'_, IVec3, Chunk>> {
