@@ -37,7 +37,7 @@ impl ChunkLoader {
         }
 
         self.last_chunk_pos = player_chunk_pos;
-        let mut queued = HashSet::default();
+        self.loaded.clear();
         let IVec3 { x, y, z } = player_chunk_pos;
 
         // index, x offset, y offset, z offset
@@ -46,14 +46,12 @@ impl ChunkLoader {
             .cartesian_product(RENDER_RANGE_Z)
             .map(|((xo, yo), zo)| (xo, yo, zo))
         {
-            queued.insert(IVec3 {
+            self.loaded.insert(IVec3 {
                 x: x + xo,
                 y: y + yo,
                 z: z + zo,
             });
         }
-
-        self.loaded = queued;
     }
 }
 
