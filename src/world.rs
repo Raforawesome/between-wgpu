@@ -60,7 +60,7 @@ impl WorldState {
 
         // process results first to allow dirty chunks to be re-queued in the same frame
         // and to remove empty meshes from the gpu world
-        for (pos, mesh_data) in self.chunk_pipeline.result().try_iter() {
+        for (pos, mesh_data) in self.chunk_pipeline.result_channel().try_iter() {
             self.queued.remove(&pos);
 
             // if mesh is empty

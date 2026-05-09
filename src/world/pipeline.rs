@@ -46,7 +46,7 @@ impl ChunkGenPipeline {
             .expect("Chunk channel shut down!");
     }
 
-    pub fn result(&self) -> &Receiver<(IVec3, ChunkMeshData)> {
+    pub fn result_channel(&self) -> &Receiver<(IVec3, ChunkMeshData)> {
         &self.result_rx
     }
 }
