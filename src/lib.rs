@@ -15,7 +15,6 @@ use crate::render::RenderState;
 // create rapidhash type aliases for hashed collections to increase performance
 pub type HashSet<K> = collections::HashSet<K, RandomState>;
 pub type HashMap<K, V> = collections::HashMap<K, V, RandomState>;
-pub type DashMap<K, V> = dashmap::DashMap<K, V, RandomState>;
 
 /// This function runs the main update loop for the game. It updates
 /// both the game and render state, then renders a frame.

@@ -1,8 +1,7 @@
-use dashmap::mapref::{entry::Entry, multiple::RefMulti, one::Ref as MapRef};
 use glam::{IVec3, U8Vec3};
 
 use crate::{
-    DashMap,
+    HashMap,
     constants::{CHUNK_SIZE, CHUNK_SIZEI, CHUNK_VOL},
     world::{
         block::BlockType,
@@ -13,14 +12,13 @@ use crate::{
 
 #[derive(Default)]
 pub struct ChunkManager<S: DensitySampler> {
-    chunk_map: DashMap<IVec3, Chunk>,
+    chunk_map: HashMap<IVec3, Chunk>,
     density_sampler: S,
 }
 
-pub type ChunkRef<'a> = MapRef<'a, IVec3, Chunk>;
 impl<S: DensitySampler> ChunkManager<S> {
     // private functions
-    pub fn generate_chunk(&self, coords: &IVec3) -> Chunk {
+    pub fn generate_chunk_with_sampler(density_sampler: &S, coords: &IVec3) -> Chunk {
         let IVec3 { x, y, z } = coords;
         let mut blocks = [BlockType::Air; CHUNK_VOL];
         let mut solid_mask = [[0; CHUNK_SIZE]; CHUNK_SIZE];
@@ -33,9 +31,8 @@ impl<S: DensitySampler> ChunkManager<S> {
                     let (lx, ly, lz) = (bx - ibx, by - iby, bz - ibz);
                     let idx = linearize(U8Vec3::new(lx as u8, ly as u8, lz as u8));
 
-                    let block_type = self
-                        .density_sampler
-                        .get_block_type(bx as f32, by as f32, bz as f32);
+                    let block_type =
+                        density_sampler.get_block_type(bx as f32, by as f32, bz as f32);
                     blocks[idx] = block_type;
                     if block_type != BlockType::Air {
                         solid_mask[lz as usize][ly as usize] |= 1 << lx;
@@ -52,6 +49,10 @@ impl<S: DensitySampler> ChunkManager<S> {
         }
     }
 
+    pub fn generate_chunk(&self, coords: &IVec3) -> Chunk {
+        Self::generate_chunk_with_sampler(&self.density_sampler, coords)
+    }
+
     // public functions
     pub fn world_to_chunk_coords(world_pos: IVec3) -> (IVec3, U8Vec3) {
         let chunk_coords = world_pos.div_euclid(IVec3::splat(CHUNK_SIZEI));
@@ -59,12 +60,12 @@ impl<S: DensitySampler> ChunkManager<S> {
         (chunk_coords, local_pos)
     }
 
-    pub fn set_block(&self, world_pos: IVec3, block_type: BlockType) -> Vec<IVec3> {
+    pub fn set_block(&mut self, world_pos: IVec3, block_type: BlockType) -> Vec<IVec3> {
         let (chunk_coords, local_pos) = Self::world_to_chunk_coords(world_pos);
 
         let mut affected_chunks = vec![chunk_coords];
 
-        if let Some(mut chunk) = self.chunk_map.get_mut(&chunk_coords) {
+        if let Some(chunk) = self.chunk_map.get_mut(&chunk_coords) {
             let idx = linearize(local_pos);
             chunk.blocks[idx] = block_type;
 
@@ -91,39 +92,22 @@ impl<S: DensitySampler> ChunkManager<S> {
         affected_chunks
     }
 
-    pub fn chunk_map(&self) -> &DashMap<IVec3, Chunk> {
-        &self.chunk_map
-    }
-
-    pub fn get_chunk<'a>(&'a self, chunk_coords: &IVec3) -> Option<ChunkRef<'a>> {
+    pub fn get_chunk(&self, chunk_coords: &IVec3) -> Option<&Chunk> {
         self.chunk_map.get(chunk_coords)
     }
 
-    pub fn get_or_generate_chunk<'a>(&'a self, chunk_coords: &IVec3) -> ChunkRef<'a> {
-        if self.chunk_map.get(chunk_coords).is_none() {
-            let generated = self.generate_chunk(chunk_coords);
-
-            match self.chunk_map.entry(*chunk_coords) {
-                Entry::Occupied(_) => {}
-                Entry::Vacant(entry) => {
-                    entry.insert(generated);
-                }
-            }
-        }
-
-        self.chunk_map
-            .get(chunk_coords)
-            .expect("chunk should exist after generation")
+    pub fn insert_chunk(&mut self, chunk: Chunk) {
+        self.chunk_map.insert(chunk.coords(), chunk);
     }
 
-    pub fn chunk_iter(&self) -> impl Iterator<Item = RefMulti<'_, IVec3, Chunk>> {
+    pub fn chunk_iter(&self) -> impl Iterator<Item = (&IVec3, &Chunk)> {
         self.chunk_map.iter()
     }
 
     // density sampler related methods
     pub fn new_with_seed(seed: i32) -> Self {
         Self {
-            chunk_map: DashMap::default(),
+            chunk_map: HashMap::default(),
             density_sampler: S::with_seed(seed),
         }
     }

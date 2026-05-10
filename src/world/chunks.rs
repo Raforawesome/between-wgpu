@@ -25,6 +25,7 @@ pub fn chunk_to_world_coords(chunk_coords: IVec3) -> IVec3 {
     chunk_coords * CHUNK_SIZEI
 }
 
+#[derive(Clone)]
 pub struct Chunk {
     pub coords: IVec3,
     pub blocks: [BlockType; CHUNK_VOL],
