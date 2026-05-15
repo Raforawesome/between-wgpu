@@ -100,22 +100,18 @@ impl WorldState {
         self.queued.retain(|pos| self.loader.contains(pos));
 
         // queue all dirty chunks that are able to be meshed
-        let mut processed = HashSet::default();
-
-        let meshable = self.dirty.iter().filter_map(|pos| {
-            Some((
-                pos,
-                self.chunk_man.get_chunk(pos)?,
-                self.chunk_man.neighbour_snapshot(pos)?,
-            ))
+        let meshable = self.dirty.extract_if(|pos| {
+            self.chunk_man.get_chunk(pos).is_some() && self.chunk_man.has_neighbours(pos)
         });
 
-        for (pos, mesh, neighbours) in meshable {
-            processed.insert(*pos);
-            self.chunk_pipeline.request_mesh(mesh.clone(), neighbours);
+        for pos in meshable {
+            if let (Some(mesh), Some(neighbours)) = (
+                self.chunk_man.get_chunk(&pos),
+                self.chunk_man.neighbour_snapshot(&pos),
+            ) {
+                self.chunk_pipeline.request_mesh(mesh.clone(), neighbours);
+            }
         }
-
-        self.dirty.retain(|pos| !processed.contains(pos));
 
         // send necessary chunks through the gen & meshing pipeline
         for chunk_pos in self.loader.loaded_chunks() {
