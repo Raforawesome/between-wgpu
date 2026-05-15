@@ -103,7 +103,7 @@ impl WorldState {
         self.queued.retain(|pos| self.loader.contains(pos));
 
         // queue all dirty chunks that are able to be meshed
-        let mut processed: Vec<IVec3> = vec![];
+        let mut processed = HashSet::default();
 
         let meshable = self.dirty.iter().filter_map(|pos| {
             Some((
@@ -114,7 +114,7 @@ impl WorldState {
         });
 
         for (pos, mesh, neighbours) in meshable {
-            processed.push(*pos);
+            processed.insert(*pos);
             self.chunk_pipeline.request_mesh(mesh.clone(), neighbours);
         }
 
