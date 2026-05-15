@@ -10,7 +10,7 @@ use texture::Texture;
 use vertex::Vertex;
 
 use wgpu::{Buffer, PipelineCompilationOptions};
-use winit::window::Window;
+use winit::{event::ElementState, keyboard::KeyCode, window::Window};
 
 use std::sync::Arc;
 
@@ -35,6 +35,9 @@ pub struct RenderState {
     is_surface_configured: bool,
     /// The render pipeline contains the buffers, shaders, and post-processing stages.
     render_pipeline: wgpu::RenderPipeline,
+    /// Render pipeline variant that draws triangle edges using polygon line mode.
+    wireframe_pipeline: wgpu::RenderPipeline,
+    wireframe_enabled: bool,
     /// Stores a list of chunk vertex & index buffers to pass to the GPU.
     chunk_buffers: HashMap<IVec3, GpuChunk>,
     /// Bind group for the diffuse texture array and sampler.
@@ -92,7 +95,12 @@ impl RenderState {
                 immediate_size: 0,
             });
 
+        /*
+         * set up render pipelines for normal view & wireframe view
+         */
         let depth_texture = Texture::create_depth_texture(&gpu);
+
+        // normal render pipeline (non-wireframe)
         let render_pipeline = gpu
             .device
             .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -143,14 +151,61 @@ impl RenderState {
                 multiview_mask: None, // not useful for this project
             });
 
-        let chunk_buffers = HashMap::default();
+        // create render pipeline for wireframe view
+        let wireframe_pipeline =
+            gpu.device
+                .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                    label: Some("between wireframe pipeline"),
+                    layout: Some(&pipeline_layout),
+                    vertex: wgpu::VertexState {
+                        module: &shader,
+                        entry_point: Some("vs_main"),
+                        buffers: &[Vertex::buffer_layout()],
+                        compilation_options: PipelineCompilationOptions::default(),
+                    },
+                    fragment: Some(wgpu::FragmentState {
+                        module: &shader,
+                        entry_point: Some("fs_main"),
+                        targets: &[Some(wgpu::ColorTargetState {
+                            format: gpu.config.format,
+                            blend: Some(wgpu::BlendState::REPLACE),
+                            write_mask: wgpu::ColorWrites::ALL,
+                        })],
+                        compilation_options: PipelineCompilationOptions::default(),
+                    }),
+                    primitive: wgpu::PrimitiveState {
+                        topology: wgpu::PrimitiveTopology::TriangleList,
+                        strip_index_format: None,
+                        front_face: wgpu::FrontFace::Ccw,
+                        cull_mode: Some(wgpu::Face::Back),
+                        polygon_mode: wgpu::PolygonMode::Line,
+                        unclipped_depth: false,
+                        conservative: false,
+                    },
+                    depth_stencil: Some(wgpu::DepthStencilState {
+                        format: Texture::DEPTH_FORMAT,
+                        depth_write_enabled: Some(true),
+                        depth_compare: Some(wgpu::CompareFunction::GreaterEqual),
+                        stencil: wgpu::StencilState::default(),
+                        bias: wgpu::DepthBiasState::default(),
+                    }),
+                    multisample: wgpu::MultisampleState {
+                        count: 1,
+                        mask: !0,
+                        alpha_to_coverage_enabled: false,
+                    },
+                    cache: None,
+                    multiview_mask: None,
+                });
 
         Ok(Self {
             is_surface_configured: false,
             camera,
             gpu,
             render_pipeline,
-            chunk_buffers,
+            wireframe_pipeline,
+            wireframe_enabled: false,
+            chunk_buffers: HashMap::default(),
             diffuse_bind_group,
             blocks_group_layout,
             cam_buffer,
@@ -218,7 +273,11 @@ impl RenderState {
                 multiview_mask: None,
             });
 
-            render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.set_pipeline(if self.wireframe_enabled {
+                &self.wireframe_pipeline
+            } else {
+                &self.render_pipeline
+            });
 
             render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
             render_pass.set_bind_group(1, &self.cam_bind_group, &[]);
@@ -245,6 +304,21 @@ impl RenderState {
         output.present();
 
         Ok(())
+    }
+
+    /// Handles key press inputs relating to render state, such as debug views.
+    pub fn handle_input(&mut self, code: KeyCode, key_state: ElementState, repeat: bool) -> bool {
+        match code {
+            KeyCode::KeyP if key_state.is_pressed() && !repeat => {
+                self.toggle_wireframe();
+                true
+            }
+            _ => false,
+        }
+    }
+
+    pub fn toggle_wireframe(&mut self) {
+        self.wireframe_enabled = !self.wireframe_enabled;
     }
 
     pub fn update(&mut self, game_state: &mut WorldState) {

@@ -77,6 +77,7 @@ impl ApplicationHandler<RenderState> for App {
                     KeyEvent {
                         physical_key: PhysicalKey::Code(code),
                         state: key_state,
+                        repeat,
                         ..
                     },
                 ..
@@ -86,6 +87,12 @@ impl ApplicationHandler<RenderState> for App {
                     return;
                 }
 
+                // otherwise let render state handle the input
+                if render_state.handle_input(code, key_state, repeat) {
+                    return;
+                }
+
+                // fallback input handling if none of the other handlers triggered
                 if let (KeyCode::Escape, true) = (code, key_state.is_pressed()) {
                     event_loop.exit();
                 }
