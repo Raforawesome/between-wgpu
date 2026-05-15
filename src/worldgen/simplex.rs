@@ -8,7 +8,7 @@ pub const HEIGHT_GRADIENT: f32 = 30.0;
 
 use crate::world::block::BlockType;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct SimplexGen {
     seed: i32,
 }
@@ -19,7 +19,7 @@ impl super::DensitySampler for SimplexGen {
     }
 
     fn sample_density(&self, x: f32, y: f32, z: f32) -> f32 {
-        let noise = noise_functions::OpenSimplex2s
+        let noise = noise_functions::OpenSimplex2
             .fbm(3, 0.5, 2.0)
             .seed(self.seed)
             .frequency(FREQ)

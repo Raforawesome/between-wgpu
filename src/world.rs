@@ -9,21 +9,26 @@ use chunk_manager::ChunkManager;
 use glam::IVec3;
 use loader::ChunkLoader;
 use player::{Player, PlayerController};
-use std::sync::Arc;
 
 use crate::{
     HashSet,
     render::RenderState,
-    world::{chunks::Chunk, pipeline::ChunkGenPipeline},
-    worldgen::simplex::SimplexGen,
+    world::{
+        chunks::Chunk,
+        pipeline::{ChunkGenPipeline, GenTask, PipelineResult, PipelineTask},
+    },
+    worldgen::{DensitySampler, simplex::SimplexGen},
 };
 
 use winit::{event::ElementState, keyboard::KeyCode};
 
+pub type WorldSampler = SimplexGen;
+
 /// Holds state for the game world, such as chunks and the player.
 /// This is kept separate from the [RenderState].
 pub struct WorldState {
-    pub chunk_man: Arc<ChunkManager<SimplexGen>>,
+    pub density_sampler: WorldSampler,
+    pub chunk_man: ChunkManager,
     pub loader: ChunkLoader,
     pub player: Player,
     pub controller: PlayerController,
@@ -35,11 +40,15 @@ pub struct WorldState {
 impl Default for WorldState {
     fn default() -> Self {
         let seed = fastrand::i32(..);
-        let chunk_man = Arc::new(ChunkManager::new_with_seed(seed));
+
+        let density_sampler = WorldSampler::with_seed(seed);
+        let chunk_man = ChunkManager::new_with_sampler(density_sampler.clone());
+        let chunk_pipeline = ChunkGenPipeline::new(density_sampler.clone());
 
         Self {
-            chunk_pipeline: ChunkGenPipeline::create(chunk_man.clone()),
+            density_sampler,
             chunk_man,
+            chunk_pipeline,
             loader: ChunkLoader::default(),
             player: Player::new((0., 90., -2.).into(), 0.0, 0.0),
             controller: PlayerController::default(),
@@ -60,51 +69,63 @@ impl WorldState {
 
         // process results first to allow dirty chunks to be re-queued in the same frame
         // and to remove empty meshes from the gpu world
-        for (pos, mesh_data) in self.chunk_pipeline.result_channel().try_iter() {
-            self.queued.remove(&pos);
+        for pipeline_result in self.chunk_pipeline.result_channel().try_iter() {
+            match pipeline_result {
+                PipelineResult::Generate(chunk) => {
+                    let coords = chunk.coords();
+                    self.chunk_man.insert_chunk(*chunk);
+                    self.dirty.insert(coords);
+                }
+                PipelineResult::Mesh(coords, mesh_data) => {
+                    // if mesh is empty
+                    if mesh_data.vertices.is_empty() || mesh_data.indices.is_empty() {
+                        // remove the chunk's buffer if it exists and we determine it's empty
+                        // this prevents chunks that are remeshed, and now have no visible faces,
+                        // from sticking around
+                        render_state.chunk_buffers_mut().remove(&coords);
+                        continue;
+                    }
 
-            // if mesh is empty
-            if mesh_data.vertices.is_empty() || mesh_data.indices.is_empty() {
-                // remove the chunk's buffer if it exists and we determine it's empty
-                // this prevents chunks that are remeshed, and now have no visible faces,
-                // from sticking around
-                render_state.chunk_buffers_mut().remove(&pos);
-                continue;
-            }
-
-            if let Some(chunk) = self.chunk_man.get_chunk(&pos) {
-                let buffers = render_state.gpu.create_chunk_buffers(
-                    pos,
-                    mesh_data,
-                    chunk.blocks(),
-                    render_state.blocks_group_layout(),
-                );
-                render_state.chunk_buffers_mut().insert(pos, buffers);
+                    if let Some(chunk) = self.chunk_man.get_chunk(&coords) {
+                        let buffers = render_state.gpu.create_chunk_buffers(
+                            coords,
+                            mesh_data,
+                            chunk.blocks(),
+                            render_state.blocks_group_layout(),
+                        );
+                        render_state.chunk_buffers_mut().insert(coords, buffers);
+                    }
+                }
             }
         }
 
         // stop queueing chunks if we can no longer see them
         self.queued.retain(|pos| self.loader.contains(pos));
-        // clean up dirty flags for chunks that are out of range
-        self.dirty.retain(|pos| self.loader.contains(pos));
+
+        // queue all dirty chunks that are able to be meshed
+        let mut processed: Vec<IVec3> = vec![];
+
+        let meshable = self.dirty.iter().filter_map(|pos| {
+            Some((
+                pos,
+                self.chunk_man.get_chunk(pos)?,
+                self.chunk_man.neighbour_snapshot(pos)?,
+            ))
+        });
+
+        for (pos, mesh, neighbours) in meshable {
+            processed.push(*pos);
+            self.chunk_pipeline.request_mesh(mesh.clone(), neighbours);
+        }
+
+        self.dirty.retain(|pos| !processed.contains(pos));
 
         // send necessary chunks through the gen & meshing pipeline
         for chunk_pos in self.loader.loaded_chunks() {
             // make sure chunk isn't already in-flight
             if !self.queued.contains(chunk_pos) {
-                // if this is the first time generating the chunk, mark neighbours as dirty
-                if self.chunk_man.get_chunk(chunk_pos).is_none() {
-                    self.queued.insert(*chunk_pos);
-                    self.dirty.extend(Chunk::neighbours_pos_list_at(*chunk_pos));
-                    // don't remove self from dirty yet, ensure we remesh after neighbors load
-                    self.chunk_pipeline.request(*chunk_pos);
-                }
-                // otherwise if the chunk is being remeshed
-                else if self.dirty.contains(chunk_pos) {
-                    self.queued.insert(*chunk_pos);
-                    self.dirty.remove(chunk_pos);
-                    self.chunk_pipeline.request(*chunk_pos);
-                }
+                self.queued.insert(*chunk_pos);
+                self.chunk_pipeline.request_generate(*chunk_pos);
             }
         }
     }

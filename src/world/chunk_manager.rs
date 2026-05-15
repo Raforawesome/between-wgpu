@@ -4,6 +4,7 @@ use crate::{
     HashMap,
     constants::{CHUNK_SIZE, CHUNK_SIZEI, CHUNK_VOL},
     world::{
+        WorldSampler,
         block::BlockType,
         chunks::{Chunk, linearize},
     },
@@ -11,14 +12,26 @@ use crate::{
 };
 
 #[derive(Default)]
-pub struct ChunkManager<S: DensitySampler> {
+pub struct ChunkManager {
     chunk_map: HashMap<IVec3, Chunk>,
-    density_sampler: S,
+    density_sampler: WorldSampler,
 }
 
-impl<S: DensitySampler> ChunkManager<S> {
+pub struct NeighbourSnapshot {
+    pub top: Chunk,
+    pub bottom: Chunk,
+    pub left: Chunk,
+    pub right: Chunk,
+    pub front: Chunk,
+    pub back: Chunk,
+}
+
+impl ChunkManager {
     // private functions
-    pub fn generate_chunk_with_sampler(density_sampler: &S, coords: &IVec3) -> Chunk {
+    pub fn fill_chunk_with_sampler<S: DensitySampler>(
+        density_sampler: &S,
+        coords: &IVec3,
+    ) -> Chunk {
         let IVec3 { x, y, z } = coords;
         let mut blocks = [BlockType::Air; CHUNK_VOL];
         let mut solid_mask = [[0; CHUNK_SIZE]; CHUNK_SIZE];
@@ -49,55 +62,57 @@ impl<S: DensitySampler> ChunkManager<S> {
         }
     }
 
-    pub fn generate_chunk(&self, coords: &IVec3) -> Chunk {
-        Self::generate_chunk_with_sampler(&self.density_sampler, coords)
+    // public functions
+    pub fn fill_chunk(&self, coords: IVec3) -> Chunk {
+        Self::fill_chunk_with_sampler(&self.density_sampler, &coords)
     }
 
-    // public functions
     pub fn world_to_chunk_coords(world_pos: IVec3) -> (IVec3, U8Vec3) {
         let chunk_coords = world_pos.div_euclid(IVec3::splat(CHUNK_SIZEI));
         let local_pos = world_pos.rem_euclid(IVec3::splat(CHUNK_SIZEI)).as_u8vec3();
         (chunk_coords, local_pos)
     }
 
-    pub fn set_block(&mut self, world_pos: IVec3, block_type: BlockType) -> Vec<IVec3> {
-        let (chunk_coords, local_pos) = Self::world_to_chunk_coords(world_pos);
+    // chunk data editing
+    pub fn generate_chunk(&mut self, coords: IVec3) {
+        let chunk = Self::fill_chunk_with_sampler(&self.density_sampler, &coords);
+        self.chunk_map.insert(coords, chunk);
+    }
 
-        let mut affected_chunks = vec![chunk_coords];
-
-        if let Some(chunk) = self.chunk_map.get_mut(&chunk_coords) {
-            let idx = linearize(local_pos);
-            chunk.blocks[idx] = block_type;
-
-            // check boundaries for neighbor updates
-            if local_pos.x == 0 {
-                affected_chunks.push(chunk_coords - IVec3::X);
-            } else if local_pos.x == CHUNK_SIZE as u8 - 1 {
-                affected_chunks.push(chunk_coords + IVec3::X);
-            }
-
-            if local_pos.y == 0 {
-                affected_chunks.push(chunk_coords - IVec3::Y);
-            } else if local_pos.y == CHUNK_SIZE as u8 - 1 {
-                affected_chunks.push(chunk_coords + IVec3::Y);
-            }
-
-            if local_pos.z == 0 {
-                affected_chunks.push(chunk_coords - IVec3::Z);
-            } else if local_pos.z == CHUNK_SIZE as u8 - 1 {
-                affected_chunks.push(chunk_coords + IVec3::Z);
-            }
-        }
-
-        affected_chunks
+    pub fn insert_chunk(&mut self, chunk: Chunk) {
+        self.chunk_map.insert(chunk.coords(), chunk);
     }
 
     pub fn get_chunk(&self, chunk_coords: &IVec3) -> Option<&Chunk> {
         self.chunk_map.get(chunk_coords)
     }
 
-    pub fn insert_chunk(&mut self, chunk: Chunk) {
-        self.chunk_map.insert(chunk.coords(), chunk);
+    pub fn get_chunk_mut(&mut self, chunk_coords: &IVec3) -> Option<&mut Chunk> {
+        self.chunk_map.get_mut(chunk_coords)
+    }
+
+    pub fn chunk_snapshot(&self, chunk_coords: &IVec3) -> Option<Chunk> {
+        self.chunk_map.get(chunk_coords).cloned()
+    }
+
+    pub fn neighbour_snapshot(&self, chunk_coords: &IVec3) -> Option<NeighbourSnapshot> {
+        let top = chunk_coords + IVec3::Y;
+        let bottom = chunk_coords + IVec3::NEG_Y;
+        let left = chunk_coords + IVec3::NEG_X;
+        let right = chunk_coords + IVec3::X;
+        let front = chunk_coords + IVec3::Z;
+        let back = chunk_coords + IVec3::NEG_Z;
+
+        let snapshot = NeighbourSnapshot {
+            top: self.chunk_map.get(&top).cloned()?,
+            bottom: self.chunk_map.get(&bottom).cloned()?,
+            left: self.chunk_map.get(&left).cloned()?,
+            right: self.chunk_map.get(&right).cloned()?,
+            front: self.chunk_map.get(&front).cloned()?,
+            back: self.chunk_map.get(&back).cloned()?,
+        };
+
+        Some(snapshot)
     }
 
     pub fn chunk_iter(&self) -> impl Iterator<Item = (&IVec3, &Chunk)> {
@@ -105,10 +120,10 @@ impl<S: DensitySampler> ChunkManager<S> {
     }
 
     // density sampler related methods
-    pub fn new_with_seed(seed: i32) -> Self {
+    pub fn new_with_sampler(sampler: WorldSampler) -> Self {
         Self {
             chunk_map: HashMap::default(),
-            density_sampler: S::with_seed(seed),
+            density_sampler: sampler,
         }
     }
 }
