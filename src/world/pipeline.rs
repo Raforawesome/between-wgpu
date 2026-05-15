@@ -11,7 +11,7 @@ use crate::{
     },
 };
 
-pub const BATCH_SIZE: i32 = 3;
+pub const BATCH_SIZE: i32 = 8;
 
 /// Sum type for pipeline tasks.
 pub enum PipelineTask {
@@ -59,7 +59,7 @@ impl ChunkGenPipeline {
 
                     batch.push(task);
                     for _ in 0..BATCH_SIZE {
-                        if let Ok(task) = request_rx.recv() {
+                        if let Ok(task) = request_rx.try_recv() {
                             batch.push(task);
                         } else {
                             break;
