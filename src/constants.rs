@@ -3,8 +3,8 @@
  */
 
 // player
-pub const BASE_SPEED: f32 = 1.5;
-pub const SPRINT_MULTI: f32 = 5.0;
+pub const BASE_SPEED: f32 = 80.0;
+pub const SPRINT_MULTI: f32 = 3.0;
 
 // chunks
 pub const CHUNK_SIZE: usize = 16;
