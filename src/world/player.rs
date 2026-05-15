@@ -116,27 +116,33 @@ impl PlayerController {
         }
     }
 
-    pub fn update_player(&self, player: &mut Player) {
+    pub fn update_player(&self, player: &mut Player, dt_seconds: f32) {
         let forward = player.forward();
         let right = player.right();
+        let mut direction = Vec3::ZERO;
 
         if self.is_forward_pressed {
-            player.position += forward * self.speed;
+            direction += forward;
         }
         if self.is_backward_pressed {
-            player.position -= forward * self.speed;
+            direction -= forward;
         }
         if self.is_right_pressed {
-            player.position += right * self.speed;
+            direction += right;
         }
         if self.is_left_pressed {
-            player.position -= right * self.speed;
+            direction -= right;
         }
         if self.is_up_pressed {
-            player.position += Vec3::Y * self.speed;
+            direction += Vec3::Y;
         }
         if self.is_down_pressed {
-            player.position -= Vec3::Y * self.speed;
+            direction -= Vec3::Y;
+        }
+
+        // normalize player direction to avoid speedup when moving diagonally
+        if direction.length_squared() > 0.0 {
+            player.position += direction.normalize() * self.speed * dt_seconds;
         }
     }
 }

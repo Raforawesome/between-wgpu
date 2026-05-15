@@ -13,10 +13,7 @@ use player::{Player, PlayerController};
 use crate::{
     HashSet,
     render::RenderState,
-    world::{
-        chunks::Chunk,
-        pipeline::{ChunkGenPipeline, GenTask, PipelineResult, PipelineTask},
-    },
+    world::pipeline::{ChunkGenPipeline, PipelineResult},
     worldgen::{DensitySampler, simplex::SimplexGen},
 };
 
@@ -60,9 +57,9 @@ impl Default for WorldState {
 
 impl WorldState {
     /// Update the game state, optionally based on the last frame's render state.
-    pub fn update(&mut self, render_state: &mut RenderState) {
+    pub fn update(&mut self, render_state: &mut RenderState, dt_seconds: f32) {
         // update player position based on player controller
-        self.controller.update_player(&mut self.player);
+        self.controller.update_player(&mut self.player, dt_seconds);
 
         // update loaded chunks based on player position
         self.loader.update(self.player.position);

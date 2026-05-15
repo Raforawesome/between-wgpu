@@ -21,9 +21,10 @@ pub type HashMap<K, V> = collections::HashMap<K, V, RandomState>;
 pub fn run_update_loop(
     game_state: &mut WorldState,
     render_state: &mut RenderState,
+    dt_seconds: f32,
 ) -> Result<(), anyhow::Error> {
     // update game state based on last frame's render state
-    game_state.update(render_state);
+    game_state.update(render_state, dt_seconds);
     // update render state based on new game state
     render_state.update(game_state);
 

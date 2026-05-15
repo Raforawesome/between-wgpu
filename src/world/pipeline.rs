@@ -48,8 +48,8 @@ impl ChunkGenPipeline {
         let (result_tx, result_rx) = crossbeam_channel::unbounded();
 
         for _ in 0..GEN_THREADS {
-            let (request_tx, request_rx) = (request_tx.clone(), request_rx.clone());
-            let (result_tx, result_rx) = (result_tx.clone(), result_rx.clone());
+            let request_rx = request_rx.clone();
+            let result_tx = result_tx.clone();
             let density_sampler = density_sampler.clone();
 
             std::thread::spawn(move || {

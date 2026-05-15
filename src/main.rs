@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Instant};
 
 use between_wgpu::{render::RenderState, run_update_loop, world::WorldState};
 
@@ -12,11 +12,21 @@ use winit::{
     window::{CursorGrabMode, Window, WindowId},
 };
 
-#[derive(Default)]
 /// Main app container for the winit event loop.
 pub struct App {
     render_state: Option<RenderState>,
     game_state: WorldState,
+    last_frame: Instant,
+}
+
+impl Default for App {
+    fn default() -> Self {
+        Self {
+            render_state: None,
+            game_state: WorldState::default(),
+            last_frame: Instant::now(),
+        }
+    }
 }
 
 impl ApplicationHandler<RenderState> for App {
@@ -36,6 +46,7 @@ impl ApplicationHandler<RenderState> for App {
 
         let state = pollster::block_on(RenderState::new(window)).unwrap();
         self.render_state = Some(state);
+        self.last_frame = Instant::now();
     }
 
     /// Handles raw device events such as mouse motion for camera look.
@@ -65,13 +76,19 @@ impl ApplicationHandler<RenderState> for App {
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::Resized(size) => render_state.resize(size.width, size.height),
-            WindowEvent::RedrawRequested => match run_update_loop(game_state, render_state) {
-                Ok(_) => {}
-                Err(e) => {
-                    log::error!("{e}");
-                    event_loop.exit();
+            WindowEvent::RedrawRequested => {
+                let now = Instant::now();
+                let dt_seconds = now.duration_since(self.last_frame).as_secs_f32();
+                self.last_frame = now;
+
+                match run_update_loop(game_state, render_state, dt_seconds) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        log::error!("{e}");
+                        event_loop.exit();
+                    }
                 }
-            },
+            }
             WindowEvent::KeyboardInput {
                 event:
                     KeyEvent {
