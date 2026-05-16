@@ -1,14 +1,14 @@
 use glam::{IVec3, U8Vec3};
 
 use crate::{
-    HashMap,
     constants::{CHUNK_SIZE, CHUNK_SIZEI, CHUNK_VOL},
     world::{
-        WorldSampler,
         block::BlockType,
-        chunks::{Chunk, linearize},
+        chunks::{linearize, Chunk},
+        WorldSampler,
     },
     worldgen::DensitySampler,
+    HashMap,
 };
 
 #[derive(Default)]
@@ -38,6 +38,8 @@ impl ChunkManager {
 
         // initial block {x, y, z}
         let (ibx, iby, ibz) = (x * CHUNK_SIZEI, y * CHUNK_SIZEI, z * CHUNK_SIZEI);
+        let densities = density_sampler.sample_chunk_densities(*coords);
+
         for bx in ibx..(ibx + CHUNK_SIZEI) {
             for by in iby..(iby + CHUNK_SIZEI) {
                 for bz in ibz..(ibz + CHUNK_SIZEI) {
@@ -45,7 +47,7 @@ impl ChunkManager {
                     let idx = linearize(U8Vec3::new(lx as u8, ly as u8, lz as u8));
 
                     let block_type =
-                        density_sampler.get_block_type(bx as f32, by as f32, bz as f32);
+                        density_sampler.density_to_block_type(densities[idx], by as f32);
                     blocks[idx] = block_type;
                     if block_type != BlockType::Air {
                         solid_mask[lz as usize][ly as usize] |= 1 << lx;
