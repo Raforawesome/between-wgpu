@@ -1,4 +1,6 @@
-use crate::world::block::BlockType;
+use glam::IVec3;
+
+use crate::{constants::CHUNK_VOL, world::block::BlockType};
 
 pub mod interpolate;
 pub mod simplex;
@@ -11,6 +13,7 @@ pub trait DensitySampler: Default + Send + Sync + Clone + 'static {
     fn with_seed(seed: i32) -> Self;
 
     fn sample_density(&self, x: f32, y: f32, z: f32) -> f32;
+
     fn density_to_block_type(&self, density: f32, y: f32) -> BlockType;
 
     fn get_block_type(&self, x: f32, y: f32, z: f32) -> BlockType {

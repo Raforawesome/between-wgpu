@@ -1,5 +1,5 @@
 /target
-assets/*
+# assets/*
 
 # slang shaders will be compiled to wgsl upon build script running
 *.wgsl
