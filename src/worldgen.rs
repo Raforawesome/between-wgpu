@@ -21,13 +21,15 @@ pub trait DensitySampler: Default + Send + Sync + Clone + 'static {
         let mut densities = [0.0; CHUNK_VOL];
         let origin = chunk_coords * CHUNK_SIZEI;
 
-        for x in 0..CHUNK_SIZEI {
-            for y in 0..CHUNK_SIZEI {
-                for z in 0..CHUNK_SIZEI {
-                    let idx =
-                        x as usize + y as usize * CHUNK_SIZE + z as usize * CHUNK_SIZE * CHUNK_SIZE;
-                    let world_pos = origin + IVec3::new(x, y, z);
-                    densities[idx] = self.sample_density(
+        for z in 0..CHUNK_SIZE {
+            let z_idx = z * CHUNK_SIZE * CHUNK_SIZE;
+
+            for y in 0..CHUNK_SIZE {
+                let y_idx = y * CHUNK_SIZE;
+
+                for x in 0..CHUNK_SIZE {
+                    let world_pos = origin + glam::IVec3::new(x as i32, y as i32, z as i32);
+                    densities[x + y_idx + z_idx] = self.sample_density(
                         world_pos.x as f32,
                         world_pos.y as f32,
                         world_pos.z as f32,
