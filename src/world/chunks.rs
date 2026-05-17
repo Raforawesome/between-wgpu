@@ -8,8 +8,13 @@ use crate::{
 /// Takes 3 positive numbers, the local xyz coordinates within a chunk, and
 /// returns an index number that represents the index of that block in a 1D array.
 #[inline]
+pub const fn linearize_xyz(x: usize, y: usize, z: usize) -> usize {
+    x + y * CHUNK_SIZE + z * CHUNK_SIZE * CHUNK_SIZE
+}
+
+#[inline]
 pub const fn linearize(pos: U8Vec3) -> usize {
-    (pos.x as usize) + (pos.y as usize) * CHUNK_SIZE + (pos.z as usize) * CHUNK_SIZE * CHUNK_SIZE
+    linearize_xyz(pos.x as usize, pos.y as usize, pos.z as usize)
 }
 
 #[inline]
