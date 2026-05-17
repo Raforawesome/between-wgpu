@@ -13,7 +13,10 @@ use world::WorldState;
 use crate::render::RenderState;
 
 // create rapidhash type aliases for hashed collections to increase performance
+/// Alias of [std::collections::HashSet] with the [rapidhash] hasher for faster (albeit non-cryptographic) hashing.
 pub type HashSet<K> = collections::HashSet<K, RandomState>;
+
+/// Alias of [std::collections::HashMap] with the [rapidhash] hasher for faster (albeit non-cryptographic) hashing.
 pub type HashMap<K, V> = collections::HashMap<K, V, RandomState>;
 
 /// This function runs the main update loop for the game. It updates

@@ -14,12 +14,12 @@ use crate::{
     HashSet,
     render::RenderState,
     world::pipeline::{ChunkGenPipeline, PipelineResult},
-    worldgen::{DensitySampler, simplex::SimplexGen},
+    worldgen::{DensitySampler, interpolate::Trilerp, simplex::SimplexGen},
 };
 
 use winit::{event::ElementState, keyboard::KeyCode};
 
-pub type WorldSampler = SimplexGen;
+pub type WorldSampler = Trilerp<SimplexGen>;
 
 /// Holds state for the game world, such as chunks and the player.
 /// This is kept separate from the [RenderState].

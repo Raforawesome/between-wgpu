@@ -3,7 +3,7 @@
  */
 
 // player
-pub const BASE_SPEED: f32 = 80.0;
+pub const BASE_SPEED: f32 = 100.0;
 pub const SPRINT_MULTI: f32 = 3.0;
 
 // chunks
@@ -11,7 +11,7 @@ pub const CHUNK_SIZE: usize = 16;
 pub type ChunkMask = [[u16; CHUNK_SIZE]; CHUNK_SIZE];
 
 // chunk rendering pipeline settings
-pub const VIEW_DISTANCE: i32 = 17;
+pub const VIEW_DISTANCE: i32 = 21;
 pub const VIEW_DISTANCE_Y: i32 = 4;
 pub const MAX_SPAWNS_PER_FRAME: usize = 64;
 pub const GEN_THREADS: usize = 2;
