@@ -1,7 +1,7 @@
 pub mod chunk_cursor;
 pub mod faces;
 
-use crate::constants::{CHUNK_IDX, CHUNK_SIZEI, CHUNK_VOL};
+use crate::constants::{CHUNK_IDX, CHUNK_VOL};
 use crate::meshing::chunk_cursor::ChunkCursor;
 use crate::render::vertex::Vertex;
 use crate::world::chunk_manager::NeighbourSnapshot;
@@ -39,8 +39,6 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &NeighbourSnapshot) -> ChunkMeshDa
         indices: Vec::with_capacity(768),
     };
 
-    let base_pos = chunk.coords() * CHUNK_SIZEI;
-
     let blocks: &[BlockType; CHUNK_VOL] = chunk.blocks();
     let mut cursor: ChunkCursor = ChunkCursor::at_origin(blocks);
 
@@ -58,42 +56,42 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &NeighbourSnapshot) -> ChunkMeshDa
                     Some(b) => b == BlockType::Air,
                     None => neighbours.top.get_block(pos.with_y(0)) == BlockType::Air,
                 } {
-                    add_top_face(&mut mesh_data, pos, base_pos);
+                    add_top_face(&mut mesh_data, pos);
                 }
 
                 if match cursor.block_below() {
                     Some(b) => b == BlockType::Air,
                     None => neighbours.bottom.get_block(pos.with_y(CHUNK_IDX)) == BlockType::Air,
                 } {
-                    add_bottom_face(&mut mesh_data, pos, base_pos);
+                    add_bottom_face(&mut mesh_data, pos);
                 }
 
                 if match cursor.block_front() {
                     Some(b) => b == BlockType::Air,
                     None => neighbours.front.get_block(pos.with_z(0)) == BlockType::Air,
                 } {
-                    add_front_face(&mut mesh_data, pos, base_pos);
+                    add_front_face(&mut mesh_data, pos);
                 }
 
                 if match cursor.block_back() {
                     Some(b) => b == BlockType::Air,
                     None => neighbours.back.get_block(pos.with_z(CHUNK_IDX)) == BlockType::Air,
                 } {
-                    add_back_face(&mut mesh_data, pos, base_pos);
+                    add_back_face(&mut mesh_data, pos);
                 }
 
                 if match cursor.block_left() {
                     Some(b) => b == BlockType::Air,
                     None => neighbours.left.get_block(pos.with_x(CHUNK_IDX)) == BlockType::Air,
                 } {
-                    add_left_face(&mut mesh_data, pos, base_pos);
+                    add_left_face(&mut mesh_data, pos);
                 }
 
                 if match cursor.block_right() {
                     Some(b) => b == BlockType::Air,
                     None => neighbours.right.get_block(pos.with_x(0)) == BlockType::Air,
                 } {
-                    add_right_face(&mut mesh_data, pos, base_pos);
+                    add_right_face(&mut mesh_data, pos);
                 }
             }
             _ => {
@@ -103,7 +101,7 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &NeighbourSnapshot) -> ChunkMeshDa
                     Some(b) => b.is_clear(),
                     None => neighbours.top.get_block(pos.with_y(0)).is_clear(),
                 } {
-                    add_top_face(&mut mesh_data, pos, base_pos);
+                    add_top_face(&mut mesh_data, pos);
                 }
 
                 if match cursor.block_below() {
@@ -113,35 +111,35 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &NeighbourSnapshot) -> ChunkMeshDa
                         .get_block(pos.with_y(CHUNK_IDX))
                         .is_clear(),
                 } {
-                    add_bottom_face(&mut mesh_data, pos, base_pos);
+                    add_bottom_face(&mut mesh_data, pos);
                 }
 
                 if match cursor.block_front() {
                     Some(b) => b.is_clear(),
                     None => neighbours.front.get_block(pos.with_z(0)).is_clear(),
                 } {
-                    add_front_face(&mut mesh_data, pos, base_pos);
+                    add_front_face(&mut mesh_data, pos);
                 }
 
                 if match cursor.block_back() {
                     Some(b) => b.is_clear(),
                     None => neighbours.back.get_block(pos.with_z(CHUNK_IDX)).is_clear(),
                 } {
-                    add_back_face(&mut mesh_data, pos, base_pos);
+                    add_back_face(&mut mesh_data, pos);
                 }
 
                 if match cursor.block_left() {
                     Some(b) => b.is_clear(),
                     None => neighbours.left.get_block(pos.with_x(CHUNK_IDX)).is_clear(),
                 } {
-                    add_left_face(&mut mesh_data, pos, base_pos);
+                    add_left_face(&mut mesh_data, pos);
                 }
 
                 if match cursor.block_right() {
                     Some(b) => b.is_clear(),
                     None => neighbours.right.get_block(pos.with_x(0)).is_clear(),
                 } {
-                    add_right_face(&mut mesh_data, pos, base_pos);
+                    add_right_face(&mut mesh_data, pos);
                 }
             }
         }

@@ -1,7 +1,6 @@
-#![allow(clippy::too_many_arguments)]
 use crate::meshing::ChunkMeshData;
 use crate::render::vertex::Vertex;
-use glam::{IVec3, U8Vec3, Vec3};
+use glam::U8Vec3;
 
 #[derive(Copy, Clone)]
 #[repr(u32)]
@@ -31,243 +30,117 @@ impl Face {
     }
 }
 
-fn world_pos(chunk_pos: IVec3, pos: U8Vec3) -> Vec3 {
-    (chunk_pos + pos.as_ivec3()).as_vec3()
+const WINDING_A: [u32; 6] = [3, 2, 1, 3, 1, 0];
+const WINDING_B: [u32; 6] = [3, 1, 2, 3, 0, 1];
+
+fn push_quad(
+    chunk_mesh_data: &mut ChunkMeshData,
+    face: Face,
+    vertices: [U8Vec3; 4],
+    indices: [u32; 6],
+) {
+    let base_id = chunk_mesh_data.vertices.len() as u32;
+    let face_id = face.shader_id();
+
+    for (uv_corner, vertex_pos) in vertices.into_iter().enumerate() {
+        chunk_mesh_data
+            .vertices
+            .push(Vertex::new(vertex_pos, uv_corner as u8, face_id));
+    }
+
+    chunk_mesh_data
+        .indices
+        .extend(indices.into_iter().map(|idx| base_id + idx));
 }
 
 /*
  * Helper functions
  *
  * The functions below provide methods that add a new face in the specified direction
- * to the mesh data lists passed to them
+ * to the mesh data lists passed to them. The 4 vertices each face function generates
+ * is relative from the bottom left vertex.
  */
 
-pub fn add_top_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_pos: IVec3) {
-    let wp = world_pos(chunk_pos, pos);
-
-    let v1_id = chunk_mesh_data.vertices.len() as u32;
-    let v2_id = v1_id + 1;
-    let v3_id = v1_id + 2;
-    let v4_id = v1_id + 3;
-
-    let f_id = Face::Top.shader_id();
-
-    chunk_mesh_data.vertices.push(Vertex::new(
-        wp + Vec3::new(0.0, 1.0, 1.0),
-        [0.0, 1.0],
-        f_id,
-    ));
-    chunk_mesh_data.vertices.push(Vertex::new(
-        wp + Vec3::new(1.0, 1.0, 1.0),
-        [1.0, 1.0],
-        f_id,
-    ));
-    chunk_mesh_data.vertices.push(Vertex::new(
-        wp + Vec3::new(1.0, 1.0, 0.0),
-        [1.0, 0.0],
-        f_id,
-    ));
-    chunk_mesh_data.vertices.push(Vertex::new(
-        wp + Vec3::new(0.0, 1.0, 0.0),
-        [0.0, 0.0],
-        f_id,
-    ));
-
-    chunk_mesh_data.indices.push(v4_id);
-    chunk_mesh_data.indices.push(v3_id);
-    chunk_mesh_data.indices.push(v2_id);
-    chunk_mesh_data.indices.push(v4_id);
-    chunk_mesh_data.indices.push(v2_id);
-    chunk_mesh_data.indices.push(v1_id);
+pub fn add_top_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3) {
+    push_quad(
+        chunk_mesh_data,
+        Face::Top,
+        [
+            pos + U8Vec3::new(0, 1, 1),
+            pos + U8Vec3::new(1, 1, 1),
+            pos + U8Vec3::new(1, 1, 0),
+            pos + U8Vec3::new(0, 1, 0),
+        ],
+        WINDING_A,
+    );
 }
 
-pub fn add_bottom_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_pos: IVec3) {
-    let wp = world_pos(chunk_pos, pos);
-
-    let v1_id = chunk_mesh_data.vertices.len() as u32;
-    let v2_id = v1_id + 1;
-    let v3_id = v1_id + 2;
-    let v4_id = v1_id + 3;
-
-    let f_id = Face::Bottom.shader_id();
-
-    chunk_mesh_data.vertices.push(Vertex::new(
-        wp + Vec3::new(0.0, 0.0, 1.0),
-        [0.0, 1.0],
-        f_id,
-    ));
-    chunk_mesh_data.vertices.push(Vertex::new(
-        wp + Vec3::new(1.0, 0.0, 1.0),
-        [1.0, 1.0],
-        f_id,
-    ));
-    chunk_mesh_data.vertices.push(Vertex::new(
-        wp + Vec3::new(1.0, 0.0, 0.0),
-        [1.0, 0.0],
-        f_id,
-    ));
-    chunk_mesh_data.vertices.push(Vertex::new(
-        wp + Vec3::new(0.0, 0.0, 0.0),
-        [0.0, 0.0],
-        f_id,
-    ));
-
-    chunk_mesh_data.indices.push(v4_id);
-    chunk_mesh_data.indices.push(v2_id);
-    chunk_mesh_data.indices.push(v3_id);
-    chunk_mesh_data.indices.push(v4_id);
-    chunk_mesh_data.indices.push(v1_id);
-    chunk_mesh_data.indices.push(v2_id);
+pub fn add_bottom_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3) {
+    push_quad(
+        chunk_mesh_data,
+        Face::Bottom,
+        [
+            pos + U8Vec3::new(0, 0, 1),
+            pos + U8Vec3::new(1, 0, 1),
+            pos + U8Vec3::new(1, 0, 0),
+            pos + U8Vec3::new(0, 0, 0),
+        ],
+        WINDING_B,
+    );
 }
 
-pub fn add_front_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_pos: IVec3) {
-    let wp = world_pos(chunk_pos, pos);
-
-    let v1_id = chunk_mesh_data.vertices.len() as u32;
-    let v2_id = v1_id + 1;
-    let v3_id = v1_id + 2;
-    let v4_id = v1_id + 3;
-
-    let f_id = Face::Front.shader_id();
-
-    chunk_mesh_data.vertices.push(Vertex::new(
-        wp + Vec3::new(0.0, 0.0, 1.0),
-        [0.0, 1.0],
-        f_id,
-    ));
-    chunk_mesh_data.vertices.push(Vertex::new(
-        wp + Vec3::new(1.0, 0.0, 1.0),
-        [1.0, 1.0],
-        f_id,
-    ));
-    chunk_mesh_data.vertices.push(Vertex::new(
-        wp + Vec3::new(1.0, 1.0, 1.0),
-        [1.0, 0.0],
-        f_id,
-    ));
-    chunk_mesh_data.vertices.push(Vertex::new(
-        wp + Vec3::new(0.0, 1.0, 1.0),
-        [0.0, 0.0],
-        f_id,
-    ));
-
-    chunk_mesh_data.indices.push(v4_id);
-    chunk_mesh_data.indices.push(v3_id);
-    chunk_mesh_data.indices.push(v2_id);
-    chunk_mesh_data.indices.push(v4_id);
-    chunk_mesh_data.indices.push(v2_id);
-    chunk_mesh_data.indices.push(v1_id);
+pub fn add_front_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3) {
+    push_quad(
+        chunk_mesh_data,
+        Face::Front,
+        [
+            pos + U8Vec3::new(0, 0, 1),
+            pos + U8Vec3::new(1, 0, 1),
+            pos + U8Vec3::new(1, 1, 1),
+            pos + U8Vec3::new(0, 1, 1),
+        ],
+        WINDING_A,
+    );
 }
 
-pub fn add_back_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_pos: IVec3) {
-    let wp = world_pos(chunk_pos, pos);
-
-    let v1_id = chunk_mesh_data.vertices.len() as u32;
-    let v2_id = v1_id + 1;
-    let v3_id = v1_id + 2;
-    let v4_id = v1_id + 3;
-
-    let f_id = Face::Back.shader_id();
-
-    chunk_mesh_data
-        .vertices
-        .push(Vertex::new(wp, [0.0, 1.0], f_id));
-    chunk_mesh_data.vertices.push(Vertex::new(
-        wp + Vec3::new(1.0, 0.0, 0.0),
-        [1.0, 1.0],
-        f_id,
-    ));
-    chunk_mesh_data.vertices.push(Vertex::new(
-        wp + Vec3::new(1.0, 1.0, 0.0),
-        [1.0, 0.0],
-        f_id,
-    ));
-    chunk_mesh_data.vertices.push(Vertex::new(
-        wp + Vec3::new(0.0, 1.0, 0.0),
-        [0.0, 0.0],
-        f_id,
-    ));
-
-    chunk_mesh_data.indices.push(v4_id);
-    chunk_mesh_data.indices.push(v2_id);
-    chunk_mesh_data.indices.push(v3_id);
-    chunk_mesh_data.indices.push(v4_id);
-    chunk_mesh_data.indices.push(v1_id);
-    chunk_mesh_data.indices.push(v2_id);
+pub fn add_back_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3) {
+    push_quad(
+        chunk_mesh_data,
+        Face::Back,
+        [
+            pos + U8Vec3::new(0, 0, 0),
+            pos + U8Vec3::new(1, 0, 0),
+            pos + U8Vec3::new(1, 1, 0),
+            pos + U8Vec3::new(0, 1, 0),
+        ],
+        WINDING_B,
+    );
 }
 
-pub fn add_left_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_pos: IVec3) {
-    let wp = world_pos(chunk_pos, pos);
-
-    let v1_id = chunk_mesh_data.vertices.len() as u32;
-    let v2_id = v1_id + 1;
-    let v3_id = v1_id + 2;
-    let v4_id = v1_id + 3;
-
-    let f_id = Face::Left.shader_id();
-
-    chunk_mesh_data
-        .vertices
-        .push(Vertex::new(wp, [0.0, 1.0], f_id));
-    chunk_mesh_data.vertices.push(Vertex::new(
-        wp + Vec3::new(0.0, 0.0, 1.0),
-        [1.0, 1.0],
-        f_id,
-    ));
-    chunk_mesh_data.vertices.push(Vertex::new(
-        wp + Vec3::new(0.0, 1.0, 1.0),
-        [1.0, 0.0],
-        f_id,
-    ));
-    chunk_mesh_data.vertices.push(Vertex::new(
-        wp + Vec3::new(0.0, 1.0, 0.0),
-        [0.0, 0.0],
-        f_id,
-    ));
-
-    chunk_mesh_data.indices.push(v4_id);
-    chunk_mesh_data.indices.push(v3_id);
-    chunk_mesh_data.indices.push(v2_id);
-    chunk_mesh_data.indices.push(v4_id);
-    chunk_mesh_data.indices.push(v2_id);
-    chunk_mesh_data.indices.push(v1_id);
+pub fn add_left_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3) {
+    push_quad(
+        chunk_mesh_data,
+        Face::Left,
+        [
+            pos + U8Vec3::new(0, 0, 0),
+            pos + U8Vec3::new(0, 0, 1),
+            pos + U8Vec3::new(0, 1, 1),
+            pos + U8Vec3::new(0, 1, 0),
+        ],
+        WINDING_A,
+    );
 }
 
-pub fn add_right_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3, chunk_pos: IVec3) {
-    let wp = world_pos(chunk_pos, pos);
-
-    let v1_id = chunk_mesh_data.vertices.len() as u32;
-    let v2_id = v1_id + 1;
-    let v3_id = v1_id + 2;
-    let v4_id = v1_id + 3;
-
-    let f_id = Face::Right.shader_id();
-
-    chunk_mesh_data.vertices.push(Vertex::new(
-        wp + Vec3::new(1.0, 0.0, 0.0),
-        [0.0, 1.0],
-        f_id,
-    ));
-    chunk_mesh_data.vertices.push(Vertex::new(
-        wp + Vec3::new(1.0, 0.0, 1.0),
-        [1.0, 1.0],
-        f_id,
-    ));
-    chunk_mesh_data.vertices.push(Vertex::new(
-        wp + Vec3::new(1.0, 1.0, 1.0),
-        [1.0, 0.0],
-        f_id,
-    ));
-    chunk_mesh_data.vertices.push(Vertex::new(
-        wp + Vec3::new(1.0, 1.0, 0.0),
-        [0.0, 0.0],
-        f_id,
-    ));
-
-    chunk_mesh_data.indices.push(v4_id);
-    chunk_mesh_data.indices.push(v2_id);
-    chunk_mesh_data.indices.push(v3_id);
-    chunk_mesh_data.indices.push(v4_id);
-    chunk_mesh_data.indices.push(v1_id);
-    chunk_mesh_data.indices.push(v2_id);
+pub fn add_right_face(chunk_mesh_data: &mut ChunkMeshData, pos: U8Vec3) {
+    push_quad(
+        chunk_mesh_data,
+        Face::Right,
+        [
+            pos + U8Vec3::new(1, 0, 0),
+            pos + U8Vec3::new(1, 0, 1),
+            pos + U8Vec3::new(1, 1, 1),
+            pos + U8Vec3::new(1, 1, 0),
+        ],
+        WINDING_B,
+    );
 }
