@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crossbeam_channel::{Receiver, Sender};
 use glam::IVec3;
 
@@ -23,7 +25,7 @@ pub enum PipelineTask {
 pub struct GenTask(pub IVec3);
 
 pub struct MeshTask {
-    chunk: Chunk,
+    chunk: Arc<Chunk>,
     neighbours: NeighbourSnapshot,
 }
 
@@ -111,7 +113,7 @@ impl ChunkGenPipeline {
             .expect("Chunk channel shut down!");
     }
 
-    pub fn request_mesh(&self, chunk: Chunk, neighbours: NeighbourSnapshot) {
+    pub fn request_mesh(&self, chunk: Arc<Chunk>, neighbours: NeighbourSnapshot) {
         self.request_tx
             .send(PipelineTask::Mesh(Box::new(MeshTask { chunk, neighbours })))
             .expect("Chunk channel shut down!");

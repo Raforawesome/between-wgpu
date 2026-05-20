@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use glam::{IVec3, U8Vec3};
 
 use crate::{
@@ -13,17 +15,17 @@ use crate::{
 
 #[derive(Default)]
 pub struct ChunkManager {
-    chunk_map: HashMap<IVec3, Chunk>,
+    chunk_map: HashMap<IVec3, Arc<Chunk>>,
     density_sampler: WorldSampler,
 }
 
 pub struct NeighbourSnapshot {
-    pub top: Chunk,
-    pub bottom: Chunk,
-    pub left: Chunk,
-    pub right: Chunk,
-    pub front: Chunk,
-    pub back: Chunk,
+    pub top: Arc<Chunk>,
+    pub bottom: Arc<Chunk>,
+    pub left: Arc<Chunk>,
+    pub right: Arc<Chunk>,
+    pub front: Arc<Chunk>,
+    pub back: Arc<Chunk>,
 }
 
 impl ChunkManager {
@@ -82,22 +84,22 @@ impl ChunkManager {
     // chunk data editing
     pub fn generate_chunk(&mut self, coords: IVec3) {
         let chunk = Self::fill_chunk_with_sampler(&self.density_sampler, &coords);
-        self.chunk_map.insert(coords, chunk);
+        self.chunk_map.insert(coords, Arc::new(chunk));
     }
 
     pub fn insert_chunk(&mut self, chunk: Chunk) {
-        self.chunk_map.insert(chunk.coords(), chunk);
+        self.chunk_map.insert(chunk.coords(), Arc::new(chunk));
     }
 
-    pub fn get_chunk(&self, chunk_coords: &IVec3) -> Option<&Chunk> {
+    pub fn get_chunk(&self, chunk_coords: &IVec3) -> Option<&Arc<Chunk>> {
         self.chunk_map.get(chunk_coords)
     }
 
-    pub fn get_chunk_mut(&mut self, chunk_coords: &IVec3) -> Option<&mut Chunk> {
+    pub fn get_chunk_mut(&mut self, chunk_coords: &IVec3) -> Option<&mut Arc<Chunk>> {
         self.chunk_map.get_mut(chunk_coords)
     }
 
-    pub fn chunk_snapshot(&self, chunk_coords: &IVec3) -> Option<Chunk> {
+    pub fn chunk_snapshot(&self, chunk_coords: &IVec3) -> Option<Arc<Chunk>> {
         self.chunk_map.get(chunk_coords).cloned()
     }
 
@@ -126,18 +128,18 @@ impl ChunkManager {
         let back = chunk_coords + IVec3::NEG_Z;
 
         let snapshot = NeighbourSnapshot {
-            top: self.chunk_map.get(&top).cloned()?,
-            bottom: self.chunk_map.get(&bottom).cloned()?,
-            left: self.chunk_map.get(&left).cloned()?,
-            right: self.chunk_map.get(&right).cloned()?,
-            front: self.chunk_map.get(&front).cloned()?,
-            back: self.chunk_map.get(&back).cloned()?,
+            top: Arc::clone(self.chunk_map.get(&top)?),
+            bottom: Arc::clone(self.chunk_map.get(&bottom)?),
+            left: Arc::clone(self.chunk_map.get(&left)?),
+            right: Arc::clone(self.chunk_map.get(&right)?),
+            front: Arc::clone(self.chunk_map.get(&front)?),
+            back: Arc::clone(self.chunk_map.get(&back)?),
         };
 
         Some(snapshot)
     }
 
-    pub fn chunk_iter(&self) -> impl Iterator<Item = (&IVec3, &Chunk)> {
+    pub fn chunk_iter(&self) -> impl Iterator<Item = (&IVec3, &Arc<Chunk>)> {
         self.chunk_map.iter()
     }
 
