@@ -82,7 +82,12 @@ impl RenderState {
         // set up the render pipeline
         let shader = gpu
             .device
-            .create_shader_module(wgpu::include_wgsl!("shaders/shader.wgsl"));
+            .create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: Some("between shader"),
+                source: wgpu::ShaderSource::Wgsl(
+                    include_str!(concat!(env!("OUT_DIR"), "/shader.wgsl")).into(),
+                ),
+            });
         let pipeline_layout = gpu
             .device
             .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
