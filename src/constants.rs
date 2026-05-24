@@ -5,6 +5,9 @@
 // player
 pub const BASE_SPEED: f32 = 100.0;
 pub const SPRINT_MULTI: f32 = 3.0;
+pub const PLAYER_RADIUS: f32 = 0.3;
+pub const PLAYER_EYE_HEIGHT: f32 = 1.62;
+pub const PLAYER_FOREHEAD: f32 = 0.18;
 
 // chunks
 pub const CHUNK_SIZE: usize = 16;

@@ -1,22 +1,29 @@
 use glam::Vec3;
 use winit::keyboard::KeyCode;
 
-use crate::constants::{BASE_SPEED, SPRINT_MULTI};
+use crate::constants::{
+    BASE_SPEED, PLAYER_EYE_HEIGHT, PLAYER_FOREHEAD, PLAYER_RADIUS, SPRINT_MULTI,
+};
 
-/// Contains player-local information, such as world position and rotation.
+/// Contains player-local information, such as eye/camera position and rotation.
 pub struct Player {
-    pub position: Vec3,
+    /// The player's eye/camera position in world space.
+    pub eye: Vec3,
     pub yaw: f32,
     pub pitch: f32,
 }
 
 impl Player {
-    pub fn new(position: Vec3, yaw: f32, pitch: f32) -> Self {
-        Self {
-            position,
-            yaw,
-            pitch,
-        }
+    pub fn new(eye: Vec3, yaw: f32, pitch: f32) -> Self {
+        Self { eye, yaw, pitch }
+    }
+
+    /// Returns the player's collision box as `(min, max)` world-space corners.
+    pub fn collider_aabb(&self) -> (Vec3, Vec3) {
+        let min = self.eye + Vec3::new(-PLAYER_RADIUS, -PLAYER_EYE_HEIGHT, -PLAYER_RADIUS);
+        let max = self.eye + Vec3::new(PLAYER_RADIUS, PLAYER_FOREHEAD, PLAYER_RADIUS);
+
+        (min, max)
     }
 
     /// Returns the forward vector of the player. This returns a unit vector which
@@ -147,7 +154,7 @@ impl PlayerController {
 
         // normalize player direction to avoid speedup when moving diagonally
         if direction.length_squared() > 0.0 {
-            player.position += direction.normalize() * self.speed * dt_seconds;
+            player.eye += direction.normalize() * self.speed * dt_seconds;
         }
     }
 }

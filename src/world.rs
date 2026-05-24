@@ -62,7 +62,7 @@ impl WorldState {
         self.controller.update_player(&mut self.player, dt_seconds);
 
         // update loaded chunks based on player position
-        self.loader.update(self.player.position);
+        self.loader.update(self.player.eye);
 
         // process results first to allow dirty chunks to be re-queued in the same frame
         // and to remove empty meshes from the gpu world

@@ -329,7 +329,7 @@ impl RenderState {
     pub fn update(&mut self, game_state: &mut WorldState) {
         // update the camera buffer
         let player = &game_state.player;
-        self.camera.position = player.position;
+        self.camera.position = player.eye;
         self.camera.yaw = player.yaw;
         self.camera.pitch = player.pitch;
 
