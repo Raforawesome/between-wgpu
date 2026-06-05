@@ -64,6 +64,9 @@ impl WorldState {
         // update loaded chunks based on player position
         self.loader.update(self.player.eye);
 
+        // keep GPU buffers for recently visible chunks instead of dropping them immediately
+        render_state.cache_chunks_outside_view(&self.loader);
+
         // process results first to allow dirty chunks to be re-queued in the same frame
         // and to remove empty meshes from the gpu world
         for pipeline_result in self.chunk_pipeline.result_channel().try_iter() {
@@ -79,7 +82,7 @@ impl WorldState {
                         // remove the chunk's buffer if it exists and we determine it's empty
                         // this prevents chunks that are remeshed, and now have no visible faces,
                         // from sticking around
-                        render_state.chunk_buffers_mut().remove(&coords);
+                        render_state.remove_chunk_buffer(&coords);
                         continue;
                     }
 
@@ -90,7 +93,11 @@ impl WorldState {
                             chunk.blocks(),
                             render_state.blocks_group_layout(),
                         );
-                        render_state.chunk_buffers_mut().insert(coords, buffers);
+                        if self.loader.contains(&coords) {
+                            render_state.insert_chunk_buffer(coords, buffers);
+                        } else {
+                            render_state.cache_chunk_buffer(coords, buffers);
+                        }
                     }
                 }
             }
@@ -115,6 +122,14 @@ impl WorldState {
 
         // send necessary chunks through the gen & meshing pipeline
         for chunk_pos in self.loader.loaded_chunks() {
+            if render_state.has_chunk_buffer(chunk_pos) {
+                continue;
+            }
+
+            if render_state.restore_chunk_buffer_from_cache(chunk_pos) {
+                continue;
+            }
+
             // make sure chunk isn't already in-flight
             if !self.queued.contains(chunk_pos) {
                 self.queued.insert(*chunk_pos);

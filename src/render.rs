@@ -14,7 +14,12 @@ use winit::{event::ElementState, keyboard::KeyCode, window::Window};
 
 use std::sync::Arc;
 
-use crate::{HashMap, WorldState};
+use crate::{
+    HashMap, WorldState,
+    constants::{CHUNK_VOL, VIEW_DISTANCE, VIEW_DISTANCE_Y},
+    util::LruCache,
+    world::loader::ChunkLoader,
+};
 
 #[allow(unused)] // uniform buffers are only accessed gpu side
 pub struct GpuChunk {
@@ -40,6 +45,9 @@ pub struct RenderState {
     wireframe_enabled: bool,
     /// Stores a list of chunk vertex & index buffers to pass to the GPU.
     chunk_buffers: HashMap<IVec3, GpuChunk>,
+    /// Contains a list of chunks that are outside view distance but being temporarily kept.
+    chunk_lru_cache:
+        LruCache<IVec3, GpuChunk, { VIEW_DISTANCE.pow(2) as usize * VIEW_DISTANCE_Y as usize }>,
     /// Bind group for the diffuse texture array and sampler.
     diffuse_bind_group: wgpu::BindGroup,
     /// Layout for per-chunk block-id textures.
@@ -211,6 +219,7 @@ impl RenderState {
             wireframe_pipeline,
             wireframe_enabled: false,
             chunk_buffers: HashMap::default(),
+            chunk_lru_cache: LruCache::default(),
             diffuse_bind_group,
             blocks_group_layout,
             cam_buffer,
@@ -343,8 +352,51 @@ impl RenderState {
 
 // getters and setters
 impl RenderState {
-    pub fn chunk_buffers_mut(&mut self) -> &mut HashMap<IVec3, GpuChunk> {
-        &mut self.chunk_buffers
+    pub fn has_chunk_buffer(&self, coords: &IVec3) -> bool {
+        self.chunk_buffers.contains_key(coords)
+    }
+
+    pub fn insert_chunk_buffer(&mut self, coords: IVec3, chunk: GpuChunk) {
+        self.chunk_lru_cache.remove(&coords);
+        self.chunk_buffers.insert(coords, chunk);
+    }
+
+    pub fn cache_chunk_buffer(&mut self, coords: IVec3, chunk: GpuChunk) {
+        self.chunk_buffers.remove(&coords);
+        self.chunk_lru_cache.put(coords, chunk);
+    }
+
+    pub fn remove_chunk_buffer(&mut self, coords: &IVec3) {
+        self.chunk_buffers.remove(coords);
+        self.chunk_lru_cache.remove(coords);
+    }
+
+    pub fn move_chunk_buffer_to_cache(&mut self, coords: &IVec3) {
+        if let Some(chunk) = self.chunk_buffers.remove(coords) {
+            self.chunk_lru_cache.put(*coords, chunk);
+        }
+    }
+
+    pub fn restore_chunk_buffer_from_cache(&mut self, coords: &IVec3) -> bool {
+        if let Some(chunk) = self.chunk_lru_cache.take(coords) {
+            self.chunk_buffers.insert(*coords, chunk);
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn cache_chunks_outside_view(&mut self, loader: &ChunkLoader) {
+        let outside_view: Vec<_> = self
+            .chunk_buffers
+            .keys()
+            .copied()
+            .filter(|coords| !loader.contains(coords))
+            .collect();
+
+        for coords in outside_view {
+            self.move_chunk_buffer_to_cache(&coords);
+        }
     }
 
     pub fn blocks_group_layout(&self) -> &wgpu::BindGroupLayout {

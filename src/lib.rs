@@ -2,6 +2,9 @@ use std::collections;
 
 use rapidhash::fast::RandomState;
 
+// another weird workaround because a lib/ folder is a ridiculous notion!
+pub mod util;
+
 pub mod constants;
 pub mod meshing;
 pub mod render;
