@@ -8,7 +8,7 @@ use crate::{
     meshing::{ChunkMeshData, mesh_chunk},
     world::{
         WorldSampler,
-        chunk_manager::{ChunkManager, NeighbourSnapshot},
+        chunk_manager::NeighbourSnapshot,
         chunks::Chunk,
     },
 };
@@ -71,9 +71,9 @@ impl ChunkGenPipeline {
                     for task in batch {
                         let result = match task {
                             PipelineTask::Generate(GenTask(coords)) => {
-                                let chunk = ChunkManager::fill_chunk_with_sampler(
+                                let chunk = Chunk::from_sampler(
+                                    coords,
                                     &density_sampler,
-                                    &coords,
                                 );
                                 PipelineResult::Generate(Box::new(chunk))
                             }

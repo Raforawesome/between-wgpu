@@ -16,7 +16,7 @@ use std::sync::Arc;
 
 use crate::{
     HashMap, WorldState,
-    constants::{CHUNK_VOL, VIEW_DISTANCE, VIEW_DISTANCE_Y},
+    constants::{VIEW_DISTANCE, VIEW_DISTANCE_Y},
     util::LruCache,
     world::loader::ChunkLoader,
 };

@@ -3,6 +3,7 @@ use glam::{IVec3, U8Vec3};
 use crate::{
     constants::{CHUNK_SIZE, CHUNK_SIZEI, CHUNK_VOL, ChunkMask},
     world::block::BlockType,
+    worldgen::DensitySampler,
 };
 
 /// Takes 3 positive numbers, the local xyz coordinates within a chunk, and
@@ -39,6 +40,43 @@ pub struct Chunk {
 }
 
 impl Chunk {
+    pub fn from_sampler<S: DensitySampler>(coords: IVec3, density_sampler: &S) -> Self {
+        let IVec3 { x, y, z } = coords;
+        let mut blocks = [BlockType::Air; CHUNK_VOL];
+        let mut solid_mask = [[0; CHUNK_SIZE]; CHUNK_SIZE];
+
+        // initial block {x, y, z}
+        let (ibx, iby, ibz) = (x * CHUNK_SIZEI, y * CHUNK_SIZEI, z * CHUNK_SIZEI);
+        let densities = density_sampler.sample_chunk_densities(coords);
+
+        for bz in ibz..(ibz + CHUNK_SIZEI) {
+            let lz = bz - ibz;
+
+            for by in iby..(iby + CHUNK_SIZEI) {
+                let ly = by - iby;
+
+                for bx in ibx..(ibx + CHUNK_SIZEI) {
+                    let lx = bx - ibx;
+                    let idx = linearize(U8Vec3::new(lx as u8, ly as u8, lz as u8));
+
+                    let block_type =
+                        density_sampler.density_to_block_type(densities[idx], by as f32);
+                    blocks[idx] = block_type;
+                    if block_type != BlockType::Air {
+                        solid_mask[lz as usize][ly as usize] |= 1 << lx;
+                    }
+                }
+            }
+        }
+
+        Self {
+            coords,
+            blocks,
+            solid_mask,
+            dirty: false,
+        }
+    }
+
     pub fn get_block(&self, pos: U8Vec3) -> BlockType {
         self.blocks[linearize(pos)]
     }

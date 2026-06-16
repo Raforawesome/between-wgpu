@@ -39,7 +39,7 @@ impl Default for WorldState {
         let seed = fastrand::i32(..);
 
         let density_sampler = WorldSampler::with_seed(seed);
-        let chunk_man = ChunkManager::new_with_sampler(density_sampler.clone());
+        let chunk_man = ChunkManager::new();
         let chunk_pipeline = ChunkGenPipeline::new(density_sampler.clone());
 
         Self {
