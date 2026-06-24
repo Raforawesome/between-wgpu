@@ -6,27 +6,24 @@ use glam::IVec3;
 use crate::{
     constants::GEN_THREADS,
     meshing::{ChunkMeshData, mesh_chunk},
-    world::{
-        WorldSampler,
-        chunk_manager::NeighbourSnapshot,
-        chunks::Chunk,
-    },
+    world::{WorldSampler, chunk_manager::NeighbourSnapshot, chunks::Chunk},
 };
 
 pub const BATCH_SIZE: i32 = 8;
 
-/// Sum type for pipeline tasks.
-pub enum PipelineTask {
-    Generate(GenTask),
-    Mesh(Box<MeshTask>),
-}
-
 /// Wrapper struct which represents a generation task for a given chunk coordinate.
 pub struct GenTask(pub IVec3);
 
+/// Represents a meshing task for an already-generated chunk.
 pub struct MeshTask {
     chunk: Arc<Chunk>,
     neighbours: NeighbourSnapshot,
+}
+
+// Sum type for pipeline tasks.
+pub enum PipelineTask {
+    Generate(GenTask),
+    Mesh(Box<MeshTask>),
 }
 
 /// Represents the outcome of a pipeline task. Pipeline tasks can be one of:
@@ -38,8 +35,6 @@ pub enum PipelineResult {
 }
 
 pub struct ChunkGenPipeline {
-    // takes a chunk position and whether it's already generated
-    // if its already generated it just needs remeshing
     request_tx: Sender<PipelineTask>,
     result_rx: Receiver<PipelineResult>,
 }
@@ -71,10 +66,7 @@ impl ChunkGenPipeline {
                     for task in batch {
                         let result = match task {
                             PipelineTask::Generate(GenTask(coords)) => {
-                                let chunk = Chunk::from_sampler(
-                                    coords,
-                                    &density_sampler,
-                                );
+                                let chunk = Chunk::from_sampler(coords, &density_sampler);
                                 PipelineResult::Generate(Box::new(chunk))
                             }
                             PipelineTask::Mesh(mesh_task) => {

@@ -63,8 +63,8 @@ impl<S: DensitySampler> DensitySampler for Trilerp<S> {
 
     fn sample_chunk_densities(&self, chunk_coords: IVec3) -> [f32; CHUNK_VOL] {
         let origin = chunk_coords * CHUNK_SIZEI;
-        let mut samples = [0.0; GRID_VOL];
-        let mut densities = [0.0; CHUNK_VOL];
+        let mut samples = [0.0; GRID_VOL]; // coarse grid of actual values
+        let mut densities = [0.0; CHUNK_VOL]; // full grid with interpolated values as well
 
         // fill up the coarse sample grid to use for interpolation
         for gz in 0..GRID_SIZE {
