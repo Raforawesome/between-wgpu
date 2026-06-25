@@ -33,6 +33,12 @@ const GRID_VOL: usize = GRID_SIZE * GRID_SIZE * GRID_SIZE;
 #[derive(Default, Clone)]
 pub struct Trilerp<S: DensitySampler>(S);
 
+impl<S: DensitySampler> Trilerp<S> {
+    pub fn new(sampler: S) -> Self {
+        Self(sampler)
+    }
+}
+
 /// Linearizes a 3D grid coordinate to a 1D array coordinate.
 #[inline]
 fn grid_idx(x: usize, y: usize, z: usize) -> usize {
@@ -46,10 +52,6 @@ fn lerp(a: f32, b: f32, t: f32) -> f32 {
 }
 
 impl<S: DensitySampler> DensitySampler for Trilerp<S> {
-    fn with_seed(seed: i32) -> Self {
-        Self(S::with_seed(seed))
-    }
-
     // There's an argument to be made that this function should actually use interpolation
     // for this even though it would be 8x slower than not doing that, simply for consistency
     // between the name and behaviour of this trait. However, I (currently) think that's stupid.
