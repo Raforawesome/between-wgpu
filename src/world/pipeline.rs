@@ -9,8 +9,6 @@ use crate::{
     world::{WorldSampler, chunk_manager::NeighbourSnapshot, chunks::Chunk},
 };
 
-pub const BATCH_SIZE: i32 = 8;
-
 /// Wrapper struct which represents a generation task for a given chunk coordinate.
 pub struct GenTask(pub IVec3);
 
@@ -40,48 +38,30 @@ pub struct ChunkGenPipeline {
 }
 
 impl ChunkGenPipeline {
-    pub fn new(density_sampler: WorldSampler) -> Self {
+    pub fn new(density_sampler: WorldSampler, threads: usize) -> Self {
         let (request_tx, request_rx) = crossbeam_channel::unbounded();
         let (result_tx, result_rx) = crossbeam_channel::unbounded();
 
-        for _ in 0..GEN_THREADS {
+        for _ in 0..threads {
             let request_rx = request_rx.clone();
             let result_tx = result_tx.clone();
             let density_sampler = density_sampler.clone();
 
             std::thread::spawn(move || {
                 while let Ok(task) = request_rx.recv() {
-                    let mut batch = Vec::with_capacity(BATCH_SIZE as usize);
-                    let mut results = Vec::with_capacity(BATCH_SIZE as usize);
-
-                    batch.push(task);
-                    for _ in 0..BATCH_SIZE {
-                        if let Ok(task) = request_rx.try_recv() {
-                            batch.push(task);
-                        } else {
-                            break;
+                    let result = match task {
+                        PipelineTask::Generate(GenTask(coords)) => {
+                            let chunk = Chunk::from_sampler(coords, &density_sampler);
+                            PipelineResult::Generate(Box::new(chunk))
                         }
-                    }
+                        PipelineTask::Mesh(mesh_task) => {
+                            let MeshTask { chunk, neighbours } = *mesh_task;
+                            let mesh_data = mesh_chunk(&chunk, &neighbours);
+                            PipelineResult::Mesh(chunk.coords, mesh_data)
+                        }
+                    };
 
-                    for task in batch {
-                        let result = match task {
-                            PipelineTask::Generate(GenTask(coords)) => {
-                                let chunk = Chunk::from_sampler(coords, &density_sampler);
-                                PipelineResult::Generate(Box::new(chunk))
-                            }
-                            PipelineTask::Mesh(mesh_task) => {
-                                let MeshTask { chunk, neighbours } = *mesh_task;
-                                let mesh_data = mesh_chunk(&chunk, &neighbours);
-                                PipelineResult::Mesh(chunk.coords, mesh_data)
-                            }
-                        };
-
-                        results.push(result);
-                    }
-
-                    for result in results {
-                        result_tx.send(result).expect("Chunk channel shut down!");
-                    }
+                    result_tx.send(result).expect("Chunk channel shut down!");
                 }
                 println!("Chunk thread shut down!");
             });

@@ -40,7 +40,13 @@ impl Default for WorldState {
 
         let density_sampler = WorldSampler::with_seed(seed);
         let chunk_man = ChunkManager::new();
-        let chunk_pipeline = ChunkGenPipeline::new(density_sampler.clone());
+
+        // attempt to set generator thread count to half the available cores
+        let gen_threads = std::thread::available_parallelism()
+            .map(|n| n.get())
+            .unwrap_or(1)
+            / 2;
+        let chunk_pipeline = ChunkGenPipeline::new(density_sampler.clone(), gen_threads);
 
         Self {
             density_sampler,
@@ -93,6 +99,7 @@ impl WorldState {
                             chunk.blocks(),
                             render_state.blocks_group_layout(),
                         );
+
                         if self.loader.contains(&coords) {
                             render_state.insert_chunk_buffer(coords, buffers);
                         } else {
