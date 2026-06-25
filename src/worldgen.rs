@@ -12,9 +12,7 @@ pub mod simplex;
 /// for an (x, y, z) coordinate. This could be a generator or an interpolator
 /// wrapping a generator. `'static` here implies that the implementing member
 /// should consist of 'static references and owned data.
-pub trait DensitySampler: Default + Send + Sync + Clone + 'static {
-    fn with_seed(seed: i32) -> Self;
-
+pub trait DensitySampler: Send + Sync + Clone + 'static {
     fn sample_density(&self, x: f32, y: f32, z: f32) -> f32;
 
     fn sample_chunk_densities(&self, chunk_coords: IVec3) -> [f32; CHUNK_VOL] {

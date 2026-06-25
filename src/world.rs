@@ -14,7 +14,7 @@ use crate::{
     HashSet,
     render::RenderState,
     world::pipeline::{ChunkGenPipeline, PipelineResult},
-    worldgen::{DensitySampler, interpolate::Trilerp, simplex::SimplexGen},
+    worldgen::{interpolate::Trilerp, simplex::SimplexGen},
 };
 
 use winit::{event::ElementState, keyboard::KeyCode};
@@ -38,7 +38,8 @@ impl Default for WorldState {
     fn default() -> Self {
         let seed = fastrand::i32(..);
 
-        let density_sampler = WorldSampler::with_seed(seed);
+        let simplex = SimplexGen::new(seed);
+        let density_sampler = Trilerp::new(simplex);
         let chunk_man = ChunkManager::new();
 
         // attempt to set generator thread count to half the available cores
