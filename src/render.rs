@@ -46,8 +46,7 @@ pub struct RenderState {
     /// Stores a list of chunk vertex & index buffers to pass to the GPU.
     chunk_buffers: HashMap<IVec3, GpuChunk>,
     /// Contains a list of chunks that are outside view distance but being temporarily kept.
-    chunk_lru_cache:
-        LruCache<IVec3, GpuChunk, { VIEW_DISTANCE.pow(2) as usize * VIEW_DISTANCE_Y as usize }>,
+    chunk_lru_cache: LruCache<IVec3, GpuChunk, 2048>,
     /// Bind group for the diffuse texture array and sampler.
     diffuse_bind_group: wgpu::BindGroup,
     /// Layout for per-chunk block-id textures.
