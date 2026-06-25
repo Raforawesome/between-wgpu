@@ -14,12 +14,12 @@ use crate::{
     HashSet,
     render::RenderState,
     world::pipeline::{ChunkGenPipeline, PipelineResult},
-    worldgen::{interpolate::Trilerp, simplex::SimplexGen},
+    worldgen::{interpolate::Trilerp, layered::LayeredGen, simplex::SimplexGen},
 };
 
 use winit::{event::ElementState, keyboard::KeyCode};
 
-pub type WorldSampler = Trilerp<SimplexGen>;
+pub type WorldSampler = Trilerp<LayeredGen>;
 
 /// Holds state for the game world, such as chunks and the player.
 /// This is kept separate from the [RenderState].
@@ -38,7 +38,7 @@ impl Default for WorldState {
     fn default() -> Self {
         let seed = fastrand::i32(..);
 
-        let simplex = SimplexGen::new(seed);
+        let simplex = LayeredGen::new(seed);
         let density_sampler = Trilerp::new(simplex);
         let chunk_man = ChunkManager::new();
 
