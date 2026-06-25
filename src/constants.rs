@@ -17,7 +17,6 @@ pub type ChunkMask = [[u16; CHUNK_SIZE]; CHUNK_SIZE];
 pub const VIEW_DISTANCE: i32 = 32;
 pub const VIEW_DISTANCE_Y: i32 = 16;
 pub const MAX_SPAWNS_PER_FRAME: usize = 64;
-pub const GEN_THREADS: usize = 2;
 
 /*
  * Derived Constants

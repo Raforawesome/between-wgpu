@@ -4,7 +4,6 @@ use crossbeam_channel::{Receiver, Sender};
 use glam::IVec3;
 
 use crate::{
-    constants::GEN_THREADS,
     meshing::{ChunkMeshData, mesh_chunk},
     world::{WorldSampler, chunk_manager::NeighbourSnapshot, chunks::Chunk},
 };

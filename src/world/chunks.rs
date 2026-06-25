@@ -40,6 +40,9 @@ pub struct Chunk {
 }
 
 impl Chunk {
+    // we allow this clippy warning because the loop indices are not redundant,
+    // they are assigned to instead of simply read from.
+    #[allow(clippy::needless_range_loop)]
     pub fn from_sampler<S: DensitySampler>(coords: IVec3, density_sampler: &S) -> Self {
         let mut blocks = [BlockType::Air; CHUNK_VOL];
         let mut solid_mask = [[0; CHUNK_SIZE]; CHUNK_SIZE];
