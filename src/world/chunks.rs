@@ -41,29 +41,27 @@ pub struct Chunk {
 
 impl Chunk {
     pub fn from_sampler<S: DensitySampler>(coords: IVec3, density_sampler: &S) -> Self {
-        let IVec3 { x, y, z } = coords;
         let mut blocks = [BlockType::Air; CHUNK_VOL];
         let mut solid_mask = [[0; CHUNK_SIZE]; CHUNK_SIZE];
 
-        // initial block {x, y, z}
-        let (ibx, iby, ibz) = (x * CHUNK_SIZEI, y * CHUNK_SIZEI, z * CHUNK_SIZEI);
+        let iby = coords.y * CHUNK_SIZEI;
         let densities = density_sampler.sample_chunk_densities(coords);
 
-        for bz in ibz..(ibz + CHUNK_SIZEI) {
-            let lz = bz - ibz;
+        for lz in 0..CHUNK_SIZE {
+            let z_idx = lz * CHUNK_SIZE * CHUNK_SIZE;
 
-            for by in iby..(iby + CHUNK_SIZEI) {
-                let ly = by - iby;
+            for ly in 0..CHUNK_SIZE {
+                let by = iby + ly as i32;
+                let y_idx = ly * CHUNK_SIZE;
 
-                for bx in ibx..(ibx + CHUNK_SIZEI) {
-                    let lx = bx - ibx;
-                    let idx = linearize(U8Vec3::new(lx as u8, ly as u8, lz as u8));
+                for lx in 0..CHUNK_SIZE {
+                    let idx = lx + y_idx + z_idx;
 
                     let block_type =
                         density_sampler.density_to_block_type(densities[idx], by as f32);
                     blocks[idx] = block_type;
                     if block_type != BlockType::Air {
-                        solid_mask[lz as usize][ly as usize] |= 1 << lx;
+                        solid_mask[lz][ly] |= 1 << lx;
                     }
                 }
             }
