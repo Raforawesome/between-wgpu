@@ -1,19 +1,28 @@
-use std::collections::VecDeque;
 use std::hash::Hash;
 
 use crate::HashMap;
 
-/// Fixed-size least-recently-used cache.
+/// Fixed-size least-recently-used cache with O(1) operations.
 ///
-/// The front of `priority` is the most recently used key and the back is the
+/// The front of the linked list is the most recently used key and the back is the
 /// least recently used key. Values are owned by the cache so callers can move
 /// them back out with [`LruCache::take`] when needed.
 pub struct LruCache<K, V, const SIZE: usize>
 where
     K: Eq + Hash + Clone,
 {
-    cache: HashMap<K, V>,
-    priority: VecDeque<K>,
+    map: HashMap<K, usize>,
+    nodes: Vec<Option<Node<K, V>>>,
+    head: Option<usize>,
+    tail: Option<usize>,
+    free: Vec<usize>,
+}
+
+struct Node<K, V> {
+    key: K,
+    value: V,
+    prev: Option<usize>,
+    next: Option<usize>,
 }
 
 impl<K, V, const SIZE: usize> Default for LruCache<K, V, SIZE>
@@ -22,8 +31,11 @@ where
 {
     fn default() -> Self {
         Self {
-            cache: HashMap::default(),
-            priority: VecDeque::default(),
+            map: HashMap::default(),
+            nodes: Vec::with_capacity(SIZE),
+            head: None,
+            tail: None,
+            free: Vec::new(),
         }
     }
 }
@@ -33,50 +45,84 @@ where
     K: Eq + Hash + Clone,
 {
     pub fn len(&self) -> usize {
-        self.cache.len()
+        self.map.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.cache.is_empty()
+        self.map.is_empty()
     }
 
     pub fn contains_key(&self, key: &K) -> bool {
-        self.cache.contains_key(key)
+        self.map.contains_key(key)
     }
 
-    fn remove_priority_key(&mut self, key: &K) -> bool {
-        if let Some(index) = self.priority.iter().position(|k| k == key) {
-            self.priority.remove(index);
-            true
+    fn detach(&mut self, idx: usize) {
+        let node = self.nodes[idx].as_ref().expect("node should exist");
+        let prev = node.prev;
+        let next = node.next;
+
+        if let Some(p) = prev {
+            self.nodes[p].as_mut().expect("prev node should exist").next = next;
         } else {
-            false
+            self.head = next;
+        }
+
+        if let Some(n) = next {
+            self.nodes[n].as_mut().expect("next node should exist").prev = prev;
+        } else {
+            self.tail = prev;
         }
     }
 
-    fn mark_recent(&mut self, key: &K) {
-        self.remove_priority_key(key);
-        self.priority.push_front(key.clone());
+    fn attach_front(&mut self, idx: usize) {
+        let node = self.nodes[idx].as_mut().expect("node should exist");
+        node.prev = None;
+        node.next = self.head;
+
+        if let Some(h) = self.head {
+            self.nodes[h].as_mut().expect("head node should exist").prev = Some(idx);
+        } else {
+            self.tail = Some(idx);
+        }
+        self.head = Some(idx);
     }
 
     /// Returns a reference to a cached value and marks it as recently used.
     pub fn get(&mut self, key: &K) -> Option<&V> {
-        if !self.cache.contains_key(key) {
-            return None;
-        }
+        let idx = *self.map.get(key)?;
+        self.detach(idx);
+        self.attach_front(idx);
+        Some(&self.nodes[idx].as_ref().unwrap().value)
+    }
 
-        self.mark_recent(key);
-        self.cache.get(key)
+    /// Returns a mutable reference to a cached value and marks it as recently used.
+    pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+        let idx = *self.map.get(key)?;
+        self.detach(idx);
+        self.attach_front(idx);
+        Some(&mut self.nodes[idx].as_mut().unwrap().value)
+    }
+
+    /// Returns a reference to a cached value without modifying its priority.
+    pub fn peek(&self, key: &K) -> Option<&V> {
+        let idx = *self.map.get(key)?;
+        Some(&self.nodes[idx].as_ref().unwrap().value)
+    }
+
+    /// Returns a mutable reference to a cached value without modifying its priority.
+    pub fn peek_mut(&mut self, key: &K) -> Option<&mut V> {
+        let idx = *self.map.get(key)?;
+        Some(&mut self.nodes[idx].as_mut().unwrap().value)
     }
 
     /// Removes a value from the cache and returns ownership of it.
     pub fn take(&mut self, key: &K) -> Option<V> {
-        let value = self.cache.remove(key);
+        let idx = self.map.remove(key)?;
+        self.detach(idx);
 
-        if value.is_some() {
-            self.remove_priority_key(key);
-        }
-
-        value
+        let node = self.nodes[idx].take().expect("node should exist");
+        self.free.push(idx);
+        Some(node.value)
     }
 
     /// Removes a value from the cache.
@@ -94,28 +140,54 @@ where
             return Some((key, value));
         }
 
-        if self.cache.contains_key(&key) {
-            self.cache.insert(key.clone(), value);
-            self.mark_recent(&key);
+        if let Some(&idx) = self.map.get(&key) {
+            let node = self.nodes[idx].as_mut().expect("node should exist");
+            node.value = value;
+            self.detach(idx);
+            self.attach_front(idx);
             return None;
         }
 
-        self.priority.push_front(key.clone());
-        self.cache.insert(key, value);
-
-        if self.cache.len() > SIZE {
-            let evicted_key = self
-                .priority
-                .pop_back()
-                .expect("lru priority queue should contain an eviction candidate");
-            let evicted_value = self
-                .cache
-                .remove(&evicted_key)
-                .expect("lru cache should contain the evicted key");
-            Some((evicted_key, evicted_value))
+        let idx = if let Some(free_idx) = self.free.pop() {
+            self.nodes[free_idx] = Some(Node {
+                key: key.clone(),
+                value,
+                prev: None,
+                next: None,
+            });
+            free_idx
+        } else if self.nodes.len() < SIZE {
+            let new_idx = self.nodes.len();
+            self.nodes.push(Some(Node {
+                key: key.clone(),
+                value,
+                prev: None,
+                next: None,
+            }));
+            new_idx
         } else {
-            None
-        }
+            // Evict tail (least recently used)
+            let evicted_idx = self.tail.expect("cache is full, tail must exist");
+            self.detach(evicted_idx);
+
+            let evicted_node = self.nodes[evicted_idx].take().expect("evicted node must exist");
+            self.map.remove(&evicted_node.key);
+
+            self.nodes[evicted_idx] = Some(Node {
+                key: key.clone(),
+                value,
+                prev: None,
+                next: None,
+            });
+            self.attach_front(evicted_idx);
+            self.map.insert(key, evicted_idx);
+
+            return Some((evicted_node.key, evicted_node.value));
+        };
+
+        self.attach_front(idx);
+        self.map.insert(key, idx);
+        None
     }
 }
 
