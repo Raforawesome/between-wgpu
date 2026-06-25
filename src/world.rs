@@ -44,9 +44,8 @@ impl Default for WorldState {
 
         // attempt to set generator thread count to half the available cores
         let gen_threads = std::thread::available_parallelism()
-            .map(|n| n.get())
-            .unwrap_or(1)
-            / 2;
+            .map(|n| n.get() / 2)
+            .unwrap_or(1);
         let chunk_pipeline = ChunkGenPipeline::new(density_sampler.clone(), gen_threads);
 
         Self {
