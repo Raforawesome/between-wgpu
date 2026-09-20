@@ -14,12 +14,7 @@ use winit::{event::ElementState, keyboard::KeyCode, window::Window};
 
 use std::sync::Arc;
 
-use crate::{
-    HashMap, WorldState,
-    constants::{VIEW_DISTANCE, VIEW_DISTANCE_Y},
-    util::LruCache,
-    world::loader::ChunkLoader,
-};
+use crate::{HashMap, WorldState, util::LruCache, world::loader::ChunkLoader};
 
 #[allow(unused)] // uniform buffers are only accessed gpu side
 pub struct GpuChunk {
