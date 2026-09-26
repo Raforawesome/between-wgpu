@@ -14,9 +14,8 @@ pub const CHUNK_SIZE: usize = 16;
 pub type ChunkMask = [[u16; CHUNK_SIZE]; CHUNK_SIZE];
 
 // chunk rendering pipeline settings
-pub const VIEW_DISTANCE: i32 = 32;
-pub const VIEW_DISTANCE_Y: i32 = 16;
-pub const MAX_SPAWNS_PER_FRAME: usize = 64;
+pub const VIEW_DISTANCE: i32 = 8;
+pub const VIEW_DISTANCE_Y: i32 = 4;
 
 /*
  * Derived Constants
