@@ -20,7 +20,6 @@ impl SimplexGen {
 }
 
 impl super::DensitySampler for SimplexGen {
-
     fn sample_density(&self, x: f32, y: f32, z: f32) -> f32 {
         let noise = noise_functions::OpenSimplex2
             .fbm(3, 0.5, 2.0)
