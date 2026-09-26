@@ -2,16 +2,16 @@
 name = "between-wgpu"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.94"
 
 [dependencies]
 anyhow = "1.0.102"
 bytemuck = { version = "1.25.0", features = ["derive"] }
 crossbeam-channel = "0.5.15"
 env_logger = "0.11.10"
-fastrand = "*"
+fastrand = "2.4.1"
 glam = { version = "0.32.1", features = ["bytemuck", "fast-math"] }
 image = { version = "0.25.10", default-features = false, features = ["png", "rayon"] }
-itertools = "0.14.0"
 log = "0.4.29"
 noise-functions = { version = "0.8.2" }
 pollster = "0.4.0"
@@ -19,3 +19,7 @@ rapidhash = { version = "4.4.1", features = ["nightly", "unsafe"] }
 thread-priority = "3.0.0"
 wgpu = "29.0.1"
 winit = "0.30.13"
+
+[[bench]]
+name = "engine"
+harness = false
