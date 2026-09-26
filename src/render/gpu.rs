@@ -1,4 +1,3 @@
-use anyhow::bail;
 use glam::IVec3;
 use std::sync::Arc;
 use wgpu::{
@@ -52,7 +51,7 @@ impl Gpu {
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
                 label: None,
-                required_features: wgpu::Features::POLYGON_MODE_LINE,
+                required_features: adapter.features() & wgpu::Features::POLYGON_MODE_LINE,
                 experimental_features: wgpu::ExperimentalFeatures::disabled(),
                 required_limits: wgpu::Limits::default(),
                 memory_hints: Default::default(),
@@ -75,13 +74,16 @@ impl Gpu {
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
-            width: size.width,
-            height: size.height,
+            width: size.width.max(1),
+            height: size.height.max(1),
             present_mode: wgpu::PresentMode::AutoVsync,
             alpha_mode: wgpu::CompositeAlphaMode::Opaque,
             view_formats: vec![],
             desired_maximum_frame_latency: 2,
         };
+
+        surface.configure(&device, &config);
+        log::info!("GPU: {:?}", adapter.get_info());
 
         Ok(Self {
             surface,
@@ -167,25 +169,26 @@ impl Gpu {
         }
     }
 
-    pub fn get_surface_texture(&mut self) -> anyhow::Result<Option<SurfaceTexture>> {
+    pub fn get_surface_texture(&mut self) -> Option<SurfaceTexture> {
         match self.surface.get_current_texture() {
-            CurrentSurfaceTexture::Success(surface_texture) => Ok(Some(surface_texture)),
+            CurrentSurfaceTexture::Success(surface_texture) => Some(surface_texture),
             CurrentSurfaceTexture::Suboptimal(surface_texture) => {
+                drop(surface_texture);
                 self.surface.configure(&self.device, &self.config);
-                Ok(Some(surface_texture))
+                None
             }
             // skip these frames
             CurrentSurfaceTexture::Timeout
             | CurrentSurfaceTexture::Validation
-            | CurrentSurfaceTexture::Occluded => Ok(None),
+            | CurrentSurfaceTexture::Occluded => None,
             CurrentSurfaceTexture::Outdated => {
                 // reconfigure outdated configuration then skip frame
                 self.surface.configure(&self.device, &self.config);
-                Ok(None)
+                None
             }
             CurrentSurfaceTexture::Lost => {
-                // device and resources lost, just bail
-                bail!("lost device");
+                self.surface.configure(&self.device, &self.config);
+                None
             }
         }
     }
