@@ -93,10 +93,9 @@ impl ApplicationHandler<RenderState> for App {
                     let p50 = self.frame_times[n / 2];
                     let p95 = self.frame_times[((n - 1) * 95) / 100];
                     let r = render_state.stats;
-                    let s = game_state.streaming.stats;
                     render_state.gpu.window.set_title(&format!(
-                        "Between | frame p50 {p50:.1} / p95 {p95:.1} ms | draw {} / {} | culled {} | triangles {} | CPU {} | jobs {}",
-                        r.drawn, r.resident, r.culled, r.triangles, s.resident, s.in_flight));
+                        "Between | frame p50 {p50:.1} / p95 {p95:.1} ms | draw {} / {} | culled {} | triangles {} | CPU {}",
+                        r.drawn, r.resident, r.culled, r.triangles, game_state.chunk_man.len()));
                     self.frame_times.clear();
                     self.stats_start = Instant::now();
                 }
@@ -142,13 +141,19 @@ fn main() -> anyhow::Result<()> {
 
     let Some(config) = between_wgpu::config::Config::parse(std::env::args().skip(1))? else {
         println!(
-            "Between: cargo run --release -- [--seed I32] [--view-distance 1..32] [--vertical-distance 1..16]\nDistances are inclusive chunk radii around the camera.\nWASD: fly, mouse: look, Space/E: up, Ctrl/Q: down, Shift: sprint, P: wireframe, C: culling, Esc: quit"
+            "Between: cargo run --release -- [--seed I32] [--view-distance 1..32] [--vertical-distance 1..16]\nChunk offsets run from -distance (inclusive) to +distance (exclusive).\nWASD: fly, mouse: look, Space/E: up, Ctrl/Q: down, Shift: sprint, P: wireframe, C: culling, Esc: quit"
         );
         return Ok(());
     };
     log::info!("run settings: {config:?}");
     let event_loop = EventLoop::with_user_event().build()?;
-    let mut app = App::default();
+    let mut app = App {
+        game_state: WorldState::new(config.seed, config.view, config.height),
+        render_state: None,
+        last_frame: Instant::now(),
+        stats_start: Instant::now(),
+        frame_times: Vec::with_capacity(240),
+    };
     event_loop.run_app(&mut app)?;
 
     Ok(())
