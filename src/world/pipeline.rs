@@ -38,32 +38,38 @@ pub struct ChunkGenPipeline {
 
 impl ChunkGenPipeline {
     pub fn new(density_sampler: WorldSampler, threads: usize) -> Self {
+        assert!(threads > 0, "at least one terrain worker is required");
         let (request_tx, request_rx) = crossbeam_channel::unbounded();
         let (result_tx, result_rx) = crossbeam_channel::unbounded();
 
-        for _ in 0..threads {
+        for id in 0..threads {
             let request_rx = request_rx.clone();
             let result_tx = result_tx.clone();
             let density_sampler = density_sampler.clone();
 
-            std::thread::spawn(move || {
-                while let Ok(task) = request_rx.recv() {
-                    let result = match task {
-                        PipelineTask::Generate(GenTask(coords)) => {
-                            let chunk = Chunk::from_sampler(coords, &density_sampler);
-                            PipelineResult::Generate(Box::new(chunk))
-                        }
-                        PipelineTask::Mesh(mesh_task) => {
-                            let MeshTask { chunk, neighbours } = *mesh_task;
-                            let mesh_data = mesh_chunk(&chunk, &neighbours);
-                            PipelineResult::Mesh(chunk.coords, mesh_data)
-                        }
-                    };
+            std::thread::Builder::new()
+                .name(format!("terrain-{id}"))
+                .spawn(move || {
+                    while let Ok(task) = request_rx.recv() {
+                        let result = match task {
+                            PipelineTask::Generate(GenTask(coords)) => {
+                                let chunk = Chunk::from_sampler(coords, &density_sampler);
+                                PipelineResult::Generate(Box::new(chunk))
+                            }
+                            PipelineTask::Mesh(mesh_task) => {
+                                let MeshTask { chunk, neighbours } = *mesh_task;
+                                let mesh_data = mesh_chunk(&chunk, &neighbours);
+                                PipelineResult::Mesh(chunk.coords, mesh_data)
+                            }
+                        };
 
-                    result_tx.send(result).expect("Chunk channel shut down!");
-                }
-                println!("Chunk thread shut down!");
-            });
+                        // Dropping the world disconnects the receiver and releases workers.
+                        if result_tx.send(result).is_err() {
+                            break;
+                        }
+                    }
+                })
+                .expect("failed to start terrain worker");
         }
 
         Self {
