@@ -46,5 +46,16 @@ float4 fs_main(VertexOutput in) : SV_Target {
     let block_id = chunk.blocks.Load(int4(voxel, 0)).x;
     let layer = atlas_layer(block_id, in.face_id);
 
-    return tex_array.Sample(sampler, float3(in.face_uv, layer));
+    // Fixed face lighting adds depth cues without extra vertex attributes.
+    // This is an artistic directional approximation; it does not cast shadows.
+    float brightness = 1.0;
+    switch (in.face_id) {
+        case 1: brightness = 0.48; break;
+        case 2: brightness = 0.68; break;
+        case 3: brightness = 0.84; break;
+        case 4: brightness = 0.62; break;
+        case 5: brightness = 0.78; break;
+    }
+    let albedo = tex_array.Sample(sampler, float3(in.face_uv, layer));
+    return float4(albedo.rgb * brightness, albedo.a);
 }
