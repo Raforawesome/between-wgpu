@@ -1,65 +1,60 @@
-use std::ops::Range;
-
 use glam::{IVec3, Vec3};
-use itertools::Itertools as _;
 
 use crate::{
     HashSet,
     constants::{CHUNK_SIZEI, VIEW_DISTANCE, VIEW_DISTANCE_Y},
 };
 
-const RENDER_RANGE_X: Range<i32> = -VIEW_DISTANCE..VIEW_DISTANCE;
-const RENDER_RANGE_Y: Range<i32> = -VIEW_DISTANCE_Y..VIEW_DISTANCE_Y;
-const RENDER_RANGE_Z: Range<i32> = -VIEW_DISTANCE..VIEW_DISTANCE;
-
+/// Chunks in the half-open view region around the player.
 pub struct ChunkLoader {
     loaded: HashSet<IVec3>,
     last_chunk_pos: IVec3,
+    horizontal: i32,
+    vertical: i32,
 }
 
 impl ChunkLoader {
+    pub fn new(horizontal: i32, vertical: i32) -> Self {
+        assert!(horizontal > 0 && vertical > 0);
+        Self {
+            loaded: HashSet::default(),
+            last_chunk_pos: IVec3::splat(i32::MAX),
+            horizontal,
+            vertical,
+        }
+    }
+
     pub fn contains(&self, pos: &IVec3) -> bool {
         self.loaded.contains(pos)
     }
-
     pub fn loaded_chunks(&self) -> impl Iterator<Item = &IVec3> {
         self.loaded.iter()
     }
 
+    /// Rebuild only when crossing a chunk boundary.
     pub fn update(&mut self, player_pos: Vec3) {
-        let player_chunk_pos = player_pos
+        let centre = player_pos
             .floor()
             .as_ivec3()
             .div_euclid(IVec3::splat(CHUNK_SIZEI));
-
-        if !self.loaded.is_empty() && player_chunk_pos == self.last_chunk_pos {
+        if !self.loaded.is_empty() && centre == self.last_chunk_pos {
             return;
         }
-
-        self.last_chunk_pos = player_chunk_pos;
+        self.last_chunk_pos = centre;
         self.loaded.clear();
-        let IVec3 { x, y, z } = player_chunk_pos;
-
-        // index, x offset, y offset, z offset
-        for (xo, yo, zo) in RENDER_RANGE_X
-            .cartesian_product(RENDER_RANGE_Y)
-            .cartesian_product(RENDER_RANGE_Z)
-            .map(|((xo, yo), zo)| (xo, yo, zo))
-        {
-            self.loaded.insert(IVec3 {
-                x: x + xo,
-                y: y + yo,
-                z: z + zo,
-            });
+        for z in -self.horizontal..self.horizontal {
+            for y in -self.vertical..self.vertical {
+                for x in -self.horizontal..self.horizontal {
+                    let pos = centre + IVec3::new(x, y, z);
+                    self.loaded.insert(pos);
+                }
+            }
         }
     }
 }
 
 impl Default for ChunkLoader {
     fn default() -> Self {
-        ChunkLoader {
-            loaded: HashSet::default(),
-            last_chunk_pos: IVec3::splat(i32::MAX),
-        }
+        Self::new(VIEW_DISTANCE, VIEW_DISTANCE_Y)
     }
 }

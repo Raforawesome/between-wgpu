@@ -2,11 +2,7 @@ use std::sync::Arc;
 
 use glam::{IVec3, U8Vec3};
 
-use crate::{
-    HashMap,
-    constants::CHUNK_SIZEI,
-    world::chunks::Chunk,
-};
+use crate::{HashMap, constants::CHUNK_SIZEI, world::chunks::Chunk};
 
 #[derive(Default)]
 pub struct ChunkManager {
@@ -23,6 +19,12 @@ pub struct NeighbourSnapshot {
 }
 
 impl ChunkManager {
+    pub fn len(&self) -> usize {
+        self.chunk_map.len()
+    }
+    pub fn is_empty(&self) -> bool {
+        self.chunk_map.is_empty()
+    }
     // public functions
     pub fn new() -> Self {
         Self::default()
