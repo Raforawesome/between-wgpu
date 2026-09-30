@@ -31,13 +31,13 @@ impl Player {
     pub fn forward(&self) -> Vec3 {
         // pitch controls the vertical component directly, while pitch cosine
         // shrinks the horizontal X/Z components as the player looks up/down
-        let pitch_sin = self.pitch.to_radians().sin();
+        let (pitch_sin, pitch_cos) = self.pitch.to_radians().sin_cos();
 
         // yaw rotates around the Y axis. At yaw = 0, the player looks along +Z;
         // positive yaw turns the forward vector toward +X.
         let (yaw_sin, yaw_cos) = self.yaw.to_radians().sin_cos();
 
-        (yaw_sin, pitch_sin, yaw_cos).into()
+        (yaw_sin * pitch_cos, pitch_sin, yaw_cos * pitch_cos).into()
     }
 
     /// Returns the right vector of the player. This returns a unit vector which
