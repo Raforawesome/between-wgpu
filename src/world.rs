@@ -14,7 +14,7 @@ use crate::{
     HashSet,
     render::RenderState,
     world::pipeline::{ChunkGenPipeline, PipelineResult},
-    worldgen::{interpolate::Trilerp, layered::LayeredGen, simplex::SimplexGen},
+    worldgen::{interpolate::Trilerp, layered::LayeredGen},
 };
 
 use winit::{event::ElementState, keyboard::KeyCode};
@@ -36,32 +36,36 @@ pub struct WorldState {
 
 impl Default for WorldState {
     fn default() -> Self {
-        let seed = fastrand::i32(..);
+        Self::new(
+            42,
+            crate::constants::VIEW_DISTANCE,
+            crate::constants::VIEW_DISTANCE_Y,
+        )
+    }
+}
 
-        let simplex = LayeredGen::new(seed);
-        let density_sampler = Trilerp::new(simplex);
-        let chunk_man = ChunkManager::new();
-
-        // attempt to set generator thread count to half the available cores
+impl WorldState {
+    /// Creates a world with reproducible generation and configurable view distances.
+    pub fn new(seed: i32, horizontal: i32, vertical: i32) -> Self {
+        let density_sampler = Trilerp::new(LayeredGen::new(seed));
+        // Use half the available cores, but always start at least one worker.
         let gen_threads = std::thread::available_parallelism()
-            .map(|n| n.get() / 2)
+            .map(|n| (n.get() / 2).max(1))
             .unwrap_or(1);
         let chunk_pipeline = ChunkGenPipeline::new(density_sampler.clone(), gen_threads);
 
         Self {
             density_sampler,
-            chunk_man,
+            chunk_man: ChunkManager::new(),
             chunk_pipeline,
-            loader: ChunkLoader::default(),
+            loader: ChunkLoader::new(horizontal, vertical),
             player: Player::new((0., 90., -2.).into(), 0.0, 0.0),
             controller: PlayerController::default(),
             queued: HashSet::default(),
             dirty: HashSet::default(),
         }
     }
-}
 
-impl WorldState {
     /// Update the game state, optionally based on the last frame's render state.
     pub fn update(&mut self, render_state: &mut RenderState, dt_seconds: f32) {
         // update player position based on player controller
