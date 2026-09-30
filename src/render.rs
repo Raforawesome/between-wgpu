@@ -1,4 +1,5 @@
 pub mod camera;
+pub mod frustum;
 pub mod gpu;
 pub mod texture;
 pub mod vertex;
@@ -16,6 +17,8 @@ use std::sync::Arc;
 
 use crate::{HashMap, WorldState, util::LruCache, world::loader::ChunkLoader};
 
+pub const GPU_CACHE_BYTES: u64 = 64 * 1024 * 1024;
+
 #[allow(unused)] // uniform buffers are only accessed gpu side
 pub struct GpuChunk {
     /// The GPU vertex buffer for the chunk.
@@ -26,6 +29,21 @@ pub struct GpuChunk {
     block_texture: Texture,
     /// Bind group exposing the block-id volume to the shader.
     chunk_bind_group: wgpu::BindGroup,
+}
+
+#[derive(Default, Clone, Copy, Debug)]
+pub struct RenderStats {
+    pub resident: usize,
+    pub drawn: usize,
+    pub culled: usize,
+    pub triangles: usize,
+}
+
+impl GpuChunk {
+    /// Payload estimate; driver allocation overhead is not included.
+    fn bytes(&self) -> u64 {
+        self.vert_buf.size() + self.idx_buf.size() + crate::constants::CHUNK_VOL as u64 + 16
+    }
 }
 
 /// Handles setting up a renderer with [wgpu]. Contains an abstraction for the GPU device.
@@ -44,6 +62,7 @@ pub struct RenderState {
     chunk_buffers: HashMap<IVec3, GpuChunk>,
     /// Contains a list of chunks that are outside view distance but being temporarily kept.
     chunk_lru_cache: LruCache<IVec3, GpuChunk, 2048>,
+    cached_bytes: u64,
     /// Bind group for the diffuse texture array and sampler.
     diffuse_bind_group: wgpu::BindGroup,
     /// Layout for per-chunk block-id textures.
@@ -213,7 +232,9 @@ impl RenderState {
             });
 
         Ok(Self {
-            is_surface_configured: false,
+            is_surface_configured: true,
+            culling_enabled: true,
+            stats: RenderStats::default(),
             camera,
             gpu,
             render_pipeline,
@@ -221,6 +242,7 @@ impl RenderState {
             wireframe_enabled: false,
             chunk_buffers: HashMap::default(),
             chunk_lru_cache: LruCache::default(),
+            cached_bytes: 0,
             diffuse_bind_group,
             blocks_group_layout,
             cam_buffer,
@@ -230,6 +252,10 @@ impl RenderState {
     }
 
     pub fn resize(&mut self, width: u32, height: u32) {
+        if width == 0 || height == 0 {
+            self.is_surface_configured = false;
+            return;
+        }
         self.gpu.resize(width, height);
         self.depth_texture = Texture::create_depth_texture(&self.gpu);
         self.camera.resize_aspect(&self.gpu.config);
@@ -256,6 +282,13 @@ impl RenderState {
                 .create_command_encoder(&wgpu::wgt::CommandEncoderDescriptor {
                     label: Some("Between Render Encoder"),
                 });
+
+        let frustum =
+            frustum::Frustum::from_view_projection(self.camera.build_view_projection_matrix());
+        self.stats = RenderStats {
+            resident: self.chunk_buffers.len(),
+            ..Default::default()
+        };
 
         // begin render pass. scoped to automatically drop it and release the borrow on encoder
         {
@@ -313,6 +346,8 @@ impl RenderState {
                     render_pass.set_index_buffer(idx_buf.slice(..), wgpu::IndexFormat::Uint32);
                     render_pass.set_bind_group(2, block_bind_group, &[]);
                     render_pass.draw_indexed(0..idx_count, 0, 0..1);
+                    self.stats.drawn += 1;
+                    self.stats.triangles += idx_count as usize / 3;
                 };
             }
         }
@@ -358,28 +393,45 @@ impl RenderState {
     }
 
     pub fn insert_chunk_buffer(&mut self, coords: IVec3, chunk: GpuChunk) {
-        self.chunk_lru_cache.remove(&coords);
+        self.take_cached_chunk(&coords);
         self.chunk_buffers.insert(coords, chunk);
     }
 
     pub fn cache_chunk_buffer(&mut self, coords: IVec3, chunk: GpuChunk) {
         self.chunk_buffers.remove(&coords);
-        self.chunk_lru_cache.put(coords, chunk);
+        self.take_cached_chunk(&coords);
+        self.cached_bytes += chunk.bytes();
+        if let Some((_, evicted)) = self.chunk_lru_cache.put(coords, chunk) {
+            self.cached_bytes -= evicted.bytes();
+        }
+        while self.cached_bytes > GPU_CACHE_BYTES {
+            let (_, evicted) = self
+                .chunk_lru_cache
+                .pop_lru()
+                .expect("nonempty cache exceeds budget");
+            self.cached_bytes -= evicted.bytes();
+        }
     }
 
     pub fn remove_chunk_buffer(&mut self, coords: &IVec3) {
         self.chunk_buffers.remove(coords);
-        self.chunk_lru_cache.remove(coords);
+        self.take_cached_chunk(coords);
     }
 
     pub fn move_chunk_buffer_to_cache(&mut self, coords: &IVec3) {
         if let Some(chunk) = self.chunk_buffers.remove(coords) {
-            self.chunk_lru_cache.put(*coords, chunk);
+            self.cache_chunk_buffer(*coords, chunk);
         }
     }
 
+    fn take_cached_chunk(&mut self, coords: &IVec3) -> Option<GpuChunk> {
+        let chunk = self.chunk_lru_cache.take(coords)?;
+        self.cached_bytes -= chunk.bytes();
+        Some(chunk)
+    }
+
     pub fn restore_chunk_buffer_from_cache(&mut self, coords: &IVec3) -> bool {
-        if let Some(chunk) = self.chunk_lru_cache.take(coords) {
+        if let Some(chunk) = self.take_cached_chunk(coords) {
             self.chunk_buffers.insert(*coords, chunk);
             true
         } else {
