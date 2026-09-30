@@ -125,6 +125,13 @@ where
         Some(node.value)
     }
 
+    /// Removes and returns the least recently used entry.
+    pub fn pop_lru(&mut self) -> Option<(K, V)> {
+        let key = self.nodes[self.tail?].as_ref()?.key.clone();
+        let value = self.take(&key)?;
+        Some((key, value))
+    }
+
     /// Removes a value from the cache.
     pub fn remove(&mut self, key: &K) -> Option<V> {
         self.take(key)
@@ -170,7 +177,9 @@ where
             let evicted_idx = self.tail.expect("cache is full, tail must exist");
             self.detach(evicted_idx);
 
-            let evicted_node = self.nodes[evicted_idx].take().expect("evicted node must exist");
+            let evicted_node = self.nodes[evicted_idx]
+                .take()
+                .expect("evicted node must exist");
             self.map.remove(&evicted_node.key);
 
             self.nodes[evicted_idx] = Some(Node {
@@ -194,6 +203,20 @@ where
 #[cfg(test)]
 mod tests {
     use super::LruCache;
+
+    #[test]
+    fn pop_lru_preserves_order_and_reuses_slots() {
+        let mut cache = LruCache::<i32, i32, 2>::default();
+        assert_eq!(cache.pop_lru(), None);
+        cache.put(1, 10);
+        cache.put(2, 20);
+        cache.get(&1);
+        assert_eq!(cache.pop_lru(), Some((2, 20)));
+        cache.put(3, 30);
+        assert_eq!(cache.pop_lru(), Some((1, 10)));
+        assert_eq!(cache.pop_lru(), Some((3, 30)));
+        assert!(cache.is_empty());
+    }
 
     #[test]
     fn get_marks_entry_as_recently_used() {
