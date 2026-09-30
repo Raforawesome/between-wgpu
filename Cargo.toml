@@ -19,7 +19,3 @@ rapidhash = { version = "4.4.1", features = ["nightly", "unsafe"] }
 thread-priority = "3.0.0"
 wgpu = "29.0.1"
 winit = "0.30.13"
-
-[[bench]]
-name = "engine"
-harness = false
