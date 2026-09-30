@@ -36,7 +36,9 @@ pub struct RenderState {
     /// The render pipeline contains the buffers, shaders, and post-processing stages.
     render_pipeline: wgpu::RenderPipeline,
     /// Render pipeline variant that draws triangle edges using polygon line mode.
-    wireframe_pipeline: wgpu::RenderPipeline,
+    wireframe_pipeline: Option<wgpu::RenderPipeline>,
+    culling_enabled: bool,
+    pub stats: RenderStats,
     wireframe_enabled: bool,
     /// Stores a list of chunk vertex & index buffers to pass to the GPU.
     chunk_buffers: HashMap<IVec3, GpuChunk>,
@@ -287,7 +289,9 @@ impl RenderState {
             });
 
             render_pass.set_pipeline(if self.wireframe_enabled {
-                &self.wireframe_pipeline
+                self.wireframe_pipeline
+                    .as_ref()
+                    .unwrap_or(&self.render_pipeline)
             } else {
                 &self.render_pipeline
             });
