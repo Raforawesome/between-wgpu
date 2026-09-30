@@ -234,15 +234,15 @@ impl RenderState {
         self.is_surface_configured = true;
     }
 
-    pub fn render(&mut self, game_state: &mut WorldState) -> anyhow::Result<()> {
+    pub fn render(&mut self, _game_state: &mut WorldState) {
         self.gpu.window.request_redraw();
         if !self.is_surface_configured {
-            return Ok(());
+            return;
         }
 
-        let output = match self.gpu.get_surface_texture()? {
+        let output = match self.gpu.get_surface_texture() {
             Some(output) => output,
-            None => return Ok(()),
+            None => return,
         };
 
         let view = output
@@ -315,8 +315,6 @@ impl RenderState {
 
         self.gpu.queue.submit([encoder.finish()]);
         output.present();
-
-        Ok(())
     }
 
     /// Handles key press inputs relating to render state, such as debug views.
