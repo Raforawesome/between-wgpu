@@ -332,8 +332,12 @@ impl RenderState {
             render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
             render_pass.set_bind_group(1, &self.cam_bind_group, &[]);
 
-            for chunk_pos in game_state.loader.loaded_chunks() {
-                if let Some(gpu_chunk) = self.chunk_buffers.get(chunk_pos) {
+            for (chunk_pos, gpu_chunk) in &self.chunk_buffers {
+                if self.culling_enabled && !frustum.contains_chunk(*chunk_pos) {
+                    self.stats.culled += 1;
+                    continue;
+                }
+                {
                     let GpuChunk {
                         vert_buf,
                         idx_buf,
@@ -359,6 +363,10 @@ impl RenderState {
     /// Handles key press inputs relating to render state, such as debug views.
     pub fn handle_input(&mut self, code: KeyCode, key_state: ElementState, repeat: bool) -> bool {
         match code {
+            KeyCode::KeyC if key_state.is_pressed() && !repeat => {
+                self.culling_enabled = !self.culling_enabled;
+                true
+            }
             KeyCode::KeyP if key_state.is_pressed() && !repeat => {
                 self.toggle_wireframe();
                 true
