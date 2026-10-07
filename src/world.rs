@@ -113,22 +113,17 @@ impl WorldState {
             }
         }
 
-        // stop queueing chunks if we can no longer see them
-        self.queued.retain(|pos| self.loader.contains(pos));
-
         // queue all dirty chunks that are able to be meshed
-        let meshable = self.dirty.extract_if(|pos| {
-            self.chunk_man.get_chunk(pos).is_some() && self.chunk_man.has_neighbours(pos)
+        self.dirty.retain(|pos| {
+            let Some(chunk) = self.chunk_man.get_chunk(pos) else {
+                return true;
+            };
+            let Some(neighbours) = self.chunk_man.neighbour_snapshot(pos) else {
+                return true;
+            };
+            self.chunk_pipeline.request_mesh(chunk.clone(), neighbours);
+            false
         });
-
-        for pos in meshable {
-            if let (Some(mesh), Some(neighbours)) = (
-                self.chunk_man.get_chunk(&pos),
-                self.chunk_man.neighbour_snapshot(&pos),
-            ) {
-                self.chunk_pipeline.request_mesh(mesh.clone(), neighbours);
-            }
-        }
 
         // send necessary chunks through the gen & meshing pipeline
         for chunk_pos in self.loader.loaded_chunks() {
@@ -141,8 +136,7 @@ impl WorldState {
             }
 
             // make sure chunk isn't already in-flight
-            if !self.queued.contains(chunk_pos) {
-                self.queued.insert(*chunk_pos);
+            if self.queued.insert(*chunk_pos) {
                 self.chunk_pipeline.request_generate(*chunk_pos);
             }
         }

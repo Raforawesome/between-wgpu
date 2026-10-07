@@ -52,40 +52,23 @@ impl ChunkManager {
         self.chunk_map.get(chunk_coords).cloned()
     }
 
-    pub fn has_neighbours(&self, chunk_coords: &IVec3) -> bool {
-        let top = chunk_coords + IVec3::Y;
-        let bottom = chunk_coords + IVec3::NEG_Y;
-        let left = chunk_coords + IVec3::NEG_X;
-        let right = chunk_coords + IVec3::X;
-        let front = chunk_coords + IVec3::Z;
-        let back = chunk_coords + IVec3::NEG_Z;
-
-        self.chunk_map.contains_key(&top)
-            && self.chunk_map.contains_key(&bottom)
-            && self.chunk_map.contains_key(&left)
-            && self.chunk_map.contains_key(&right)
-            && self.chunk_map.contains_key(&front)
-            && self.chunk_map.contains_key(&back)
-    }
-
     pub fn neighbour_snapshot(&self, chunk_coords: &IVec3) -> Option<NeighbourSnapshot> {
-        let top = chunk_coords + IVec3::Y;
-        let bottom = chunk_coords + IVec3::NEG_Y;
-        let left = chunk_coords + IVec3::NEG_X;
-        let right = chunk_coords + IVec3::X;
-        let front = chunk_coords + IVec3::Z;
-        let back = chunk_coords + IVec3::NEG_Z;
+        // Check availability before cloning, so incomplete neighbourhoods do no refcount work.
+        let top = self.chunk_map.get(&(chunk_coords + IVec3::Y))?;
+        let bottom = self.chunk_map.get(&(chunk_coords + IVec3::NEG_Y))?;
+        let left = self.chunk_map.get(&(chunk_coords + IVec3::NEG_X))?;
+        let right = self.chunk_map.get(&(chunk_coords + IVec3::X))?;
+        let front = self.chunk_map.get(&(chunk_coords + IVec3::Z))?;
+        let back = self.chunk_map.get(&(chunk_coords + IVec3::NEG_Z))?;
 
-        let snapshot = NeighbourSnapshot {
-            top: Arc::clone(self.chunk_map.get(&top)?),
-            bottom: Arc::clone(self.chunk_map.get(&bottom)?),
-            left: Arc::clone(self.chunk_map.get(&left)?),
-            right: Arc::clone(self.chunk_map.get(&right)?),
-            front: Arc::clone(self.chunk_map.get(&front)?),
-            back: Arc::clone(self.chunk_map.get(&back)?),
-        };
-
-        Some(snapshot)
+        Some(NeighbourSnapshot {
+            top: Arc::clone(top),
+            bottom: Arc::clone(bottom),
+            left: Arc::clone(left),
+            right: Arc::clone(right),
+            front: Arc::clone(front),
+            back: Arc::clone(back),
+        })
     }
 
     pub fn chunk_iter(&self) -> impl Iterator<Item = (&IVec3, &Arc<Chunk>)> {
