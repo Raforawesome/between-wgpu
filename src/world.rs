@@ -70,10 +70,11 @@ impl WorldState {
         self.controller.update_player(&mut self.player, dt_seconds);
 
         // update loaded chunks based on player position
-        self.loader.update(self.player.eye);
-
-        // keep GPU buffers for recently visible chunks instead of dropping them immediately
-        render_state.cache_chunks_outside_view(&self.loader);
+        if self.loader.update(self.player.eye) {
+            // Membership only changes when the player crosses a chunk boundary.
+            render_state.cache_chunks_outside_view(&self.loader);
+            self.queued.retain(|pos| self.loader.contains(pos));
+        }
 
         // process results first to allow dirty chunks to be re-queued in the same frame
         // and to remove empty meshes from the gpu world
