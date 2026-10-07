@@ -24,7 +24,6 @@ pub type WorldSampler = Trilerp<LayeredGen>;
 /// Holds state for the game world, such as chunks and the player.
 /// This is kept separate from the [RenderState].
 pub struct WorldState {
-    pub density_sampler: WorldSampler,
     pub chunk_man: ChunkManager,
     pub loader: ChunkLoader,
     pub player: Player,
@@ -52,10 +51,9 @@ impl WorldState {
         let gen_threads = std::thread::available_parallelism()
             .map(|n| (n.get() / 2).max(1))
             .unwrap_or(1);
-        let chunk_pipeline = ChunkGenPipeline::new(density_sampler.clone(), gen_threads);
+        let chunk_pipeline = ChunkGenPipeline::new(density_sampler, gen_threads);
 
         Self {
-            density_sampler,
             chunk_man: ChunkManager::new(),
             chunk_pipeline,
             loader: ChunkLoader::new(horizontal, vertical),
