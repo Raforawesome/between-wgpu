@@ -5,12 +5,13 @@ use glam::U8Vec3;
 #[derive(Copy, Clone)]
 #[repr(u32)]
 pub enum Face {
-    Top,
-    Bottom,
-    Left,
-    Right,
-    Back,
-    Front,
+    // GPU IDs used for face bias and lighting in fragment.slang.
+    Top = 0,
+    Bottom = 1,
+    Left = 2,
+    Right = 3,
+    Back = 4,
+    Front = 5,
 }
 
 impl Face {
