@@ -35,7 +35,6 @@ pub fn chunk_to_world_coords(chunk_coords: IVec3) -> IVec3 {
 pub struct Chunk {
     pub coords: IVec3,
     pub blocks: [BlockType; CHUNK_VOL],
-    pub dirty: bool,
     pub solid_mask: ChunkMask,
 }
 
@@ -74,7 +73,6 @@ impl Chunk {
             coords,
             blocks,
             solid_mask,
-            dirty: false,
         }
     }
 

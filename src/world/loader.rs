@@ -31,14 +31,14 @@ impl ChunkLoader {
         self.loaded.iter()
     }
 
-    /// Rebuild only when crossing a chunk boundary.
-    pub fn update(&mut self, player_pos: Vec3) {
+    /// Rebuild only when crossing a chunk boundary. Returns whether the region changed.
+    pub fn update(&mut self, player_pos: Vec3) -> bool {
         let centre = player_pos
             .floor()
             .as_ivec3()
             .div_euclid(IVec3::splat(CHUNK_SIZEI));
         if !self.loaded.is_empty() && centre == self.last_chunk_pos {
-            return;
+            return false;
         }
         self.last_chunk_pos = centre;
         self.loaded.clear();
@@ -50,6 +50,7 @@ impl ChunkLoader {
                 }
             }
         }
+        true
     }
 }
 
