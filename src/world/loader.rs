@@ -58,3 +58,33 @@ impl Default for ChunkLoader {
         Self::new(VIEW_DISTANCE, VIEW_DISTANCE_Y)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reports_changes_only_on_initial_load_and_chunk_crossings() {
+        let mut loader = ChunkLoader::new(2, 1);
+        assert!(loader.update(Vec3::ZERO));
+        assert_eq!(loader.loaded_chunks().count(), 32);
+        assert!(!loader.update(Vec3::splat(15.9)));
+
+        assert!(loader.update(Vec3::new(16.0, 0.0, 0.0)));
+        assert!(!loader.contains(&IVec3::new(-2, 0, 0)));
+        assert!(loader.contains(&IVec3::new(2, 0, 0)));
+        assert!(!loader.update(Vec3::new(16.0, 0.0, 0.0)));
+    }
+
+    #[test]
+    fn negative_positions_cross_boundaries_using_floor_division() {
+        let mut loader = ChunkLoader::new(1, 1);
+        assert!(loader.update(Vec3::ZERO));
+        assert!(loader.update(Vec3::new(-0.1, 0.0, 0.0)));
+        assert!(loader.contains(&IVec3::new(-2, 0, 0)));
+        assert!(!loader.contains(&IVec3::ZERO));
+        assert!(!loader.update(Vec3::new(-16.0, 0.0, 0.0)));
+        assert!(loader.update(Vec3::new(-16.1, 0.0, 0.0)));
+        assert!(loader.contains(&IVec3::new(-3, 0, 0)));
+    }
+}
