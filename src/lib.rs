@@ -31,9 +31,9 @@ pub fn run_update_loop(
 ) {
     // update game state based on last frame's render state
     game_state.update(render_state, dt_seconds);
-    // update render state based on new game state
-    render_state.update(game_state);
+    let player = &game_state.player;
+    render_state.update_camera(player.eye, player.yaw, player.pitch);
 
     // draw new render state
-    render_state.render(game_state);
+    render_state.render();
 }

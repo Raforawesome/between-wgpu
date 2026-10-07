@@ -5,7 +5,7 @@ pub mod texture;
 pub mod vertex;
 
 use camera::Camera;
-use glam::IVec3;
+use glam::{IVec3, Vec3};
 use gpu::Gpu;
 use texture::Texture;
 use vertex::Vertex;
@@ -15,7 +15,7 @@ use winit::{event::ElementState, keyboard::KeyCode, window::Window};
 
 use std::sync::Arc;
 
-use crate::{HashMap, WorldState, util::LruCache, world::loader::ChunkLoader};
+use crate::{HashMap, util::LruCache, world::loader::ChunkLoader};
 
 pub const GPU_CACHE_BYTES: u64 = 64 * 1024 * 1024;
 
@@ -262,7 +262,7 @@ impl RenderState {
         self.is_surface_configured = true;
     }
 
-    pub fn render(&mut self, _game_state: &mut WorldState) {
+    pub fn render(&mut self) {
         self.gpu.window.request_redraw();
         if !self.is_surface_configured {
             return;
@@ -379,12 +379,11 @@ impl RenderState {
         self.wireframe_enabled = !self.wireframe_enabled;
     }
 
-    pub fn update(&mut self, game_state: &mut WorldState) {
+    pub fn update_camera(&mut self, position: Vec3, yaw: f32, pitch: f32) {
         // update the camera buffer
-        let player = &game_state.player;
-        self.camera.position = player.eye;
-        self.camera.yaw = player.yaw;
-        self.camera.pitch = player.pitch;
+        self.camera.position = position;
+        self.camera.yaw = yaw;
+        self.camera.pitch = pitch;
 
         self.gpu.queue.write_buffer(
             &self.cam_buffer,
