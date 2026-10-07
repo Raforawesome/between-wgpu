@@ -11,6 +11,8 @@ pub const PLAYER_FOREHEAD: f32 = 0.18;
 
 // chunks
 pub const CHUNK_SIZE: usize = 16;
+// The u16 occupancy rows and fragment shader's 0..15 voxel clamp assume this size.
+const _: () = assert!(CHUNK_SIZE == 16);
 pub type ChunkMask = [[u16; CHUNK_SIZE]; CHUNK_SIZE];
 
 // chunk rendering pipeline settings
