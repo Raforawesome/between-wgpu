@@ -43,109 +43,72 @@ fn chunk_mesh_data(chunk: &Chunk, neighbours: &NeighbourSnapshot) -> ChunkMeshDa
     let mut cursor: ChunkCursor = ChunkCursor::at_origin(blocks);
 
     for &block in blocks {
+        // water only shows faces against air, everything else against any clear block.
+        // each arm monomorphizes its own copy of add_visible_faces, so the test is inlined.
         match block {
             BlockType::Air => (),
-            // the two branches below are almost identical.
-            // the only difference is for water we add faces where air is,
-            // and for everything else we add faces where any clear block is.
-            // I couldn't find a way to genericize this that wasn't ridiculously complex.
             BlockType::Water => {
-                let pos = cursor.pos;
-
-                if match cursor.block_above() {
-                    Some(b) => b == BlockType::Air,
-                    None => neighbours.top.get_block(pos.with_y(0)) == BlockType::Air,
-                } {
-                    add_top_face(&mut mesh_data, pos);
-                }
-
-                if match cursor.block_below() {
-                    Some(b) => b == BlockType::Air,
-                    None => neighbours.bottom.get_block(pos.with_y(CHUNK_IDX)) == BlockType::Air,
-                } {
-                    add_bottom_face(&mut mesh_data, pos);
-                }
-
-                if match cursor.block_front() {
-                    Some(b) => b == BlockType::Air,
-                    None => neighbours.front.get_block(pos.with_z(0)) == BlockType::Air,
-                } {
-                    add_front_face(&mut mesh_data, pos);
-                }
-
-                if match cursor.block_back() {
-                    Some(b) => b == BlockType::Air,
-                    None => neighbours.back.get_block(pos.with_z(CHUNK_IDX)) == BlockType::Air,
-                } {
-                    add_back_face(&mut mesh_data, pos);
-                }
-
-                if match cursor.block_left() {
-                    Some(b) => b == BlockType::Air,
-                    None => neighbours.left.get_block(pos.with_x(CHUNK_IDX)) == BlockType::Air,
-                } {
-                    add_left_face(&mut mesh_data, pos);
-                }
-
-                if match cursor.block_right() {
-                    Some(b) => b == BlockType::Air,
-                    None => neighbours.right.get_block(pos.with_x(0)) == BlockType::Air,
-                } {
-                    add_right_face(&mut mesh_data, pos);
-                }
+                add_visible_faces(&mut mesh_data, &cursor, neighbours, |b| b == BlockType::Air)
             }
-            _ => {
-                let pos = cursor.pos;
-
-                if match cursor.block_above() {
-                    Some(b) => b.is_clear(),
-                    None => neighbours.top.get_block(pos.with_y(0)).is_clear(),
-                } {
-                    add_top_face(&mut mesh_data, pos);
-                }
-
-                if match cursor.block_below() {
-                    Some(b) => b.is_clear(),
-                    None => neighbours
-                        .bottom
-                        .get_block(pos.with_y(CHUNK_IDX))
-                        .is_clear(),
-                } {
-                    add_bottom_face(&mut mesh_data, pos);
-                }
-
-                if match cursor.block_front() {
-                    Some(b) => b.is_clear(),
-                    None => neighbours.front.get_block(pos.with_z(0)).is_clear(),
-                } {
-                    add_front_face(&mut mesh_data, pos);
-                }
-
-                if match cursor.block_back() {
-                    Some(b) => b.is_clear(),
-                    None => neighbours.back.get_block(pos.with_z(CHUNK_IDX)).is_clear(),
-                } {
-                    add_back_face(&mut mesh_data, pos);
-                }
-
-                if match cursor.block_left() {
-                    Some(b) => b.is_clear(),
-                    None => neighbours.left.get_block(pos.with_x(CHUNK_IDX)).is_clear(),
-                } {
-                    add_left_face(&mut mesh_data, pos);
-                }
-
-                if match cursor.block_right() {
-                    Some(b) => b.is_clear(),
-                    None => neighbours.right.get_block(pos.with_x(0)).is_clear(),
-                } {
-                    add_right_face(&mut mesh_data, pos);
-                }
-            }
+            _ => add_visible_faces(&mut mesh_data, &cursor, neighbours, |b| b.is_clear()),
         }
 
         cursor.advance();
     }
 
     mesh_data
+}
+
+/// Adds each face of the block under the cursor whose neighbouring block passes `shows_face`.
+/// Neighbours across the chunk border are read from the neighbour snapshot.
+#[inline(always)]
+fn add_visible_faces(
+    mesh_data: &mut ChunkMeshData,
+    cursor: &ChunkCursor,
+    neighbours: &NeighbourSnapshot,
+    shows_face: impl Fn(BlockType) -> bool,
+) {
+    let pos = cursor.pos;
+
+    let above = cursor
+        .block_above()
+        .unwrap_or_else(|| neighbours.top.get_block(pos.with_y(0)));
+    if shows_face(above) {
+        add_top_face(mesh_data, pos);
+    }
+
+    let below = cursor
+        .block_below()
+        .unwrap_or_else(|| neighbours.bottom.get_block(pos.with_y(CHUNK_IDX)));
+    if shows_face(below) {
+        add_bottom_face(mesh_data, pos);
+    }
+
+    let front = cursor
+        .block_front()
+        .unwrap_or_else(|| neighbours.front.get_block(pos.with_z(0)));
+    if shows_face(front) {
+        add_front_face(mesh_data, pos);
+    }
+
+    let back = cursor
+        .block_back()
+        .unwrap_or_else(|| neighbours.back.get_block(pos.with_z(CHUNK_IDX)));
+    if shows_face(back) {
+        add_back_face(mesh_data, pos);
+    }
+
+    let left = cursor
+        .block_left()
+        .unwrap_or_else(|| neighbours.left.get_block(pos.with_x(CHUNK_IDX)));
+    if shows_face(left) {
+        add_left_face(mesh_data, pos);
+    }
+
+    let right = cursor
+        .block_right()
+        .unwrap_or_else(|| neighbours.right.get_block(pos.with_x(0)));
+    if shows_face(right) {
+        add_right_face(mesh_data, pos);
+    }
 }
