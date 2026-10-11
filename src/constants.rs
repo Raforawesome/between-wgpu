@@ -30,8 +30,6 @@ pub const CHUNK_SIZEU: u32 = CHUNK_SIZE as u32;
 pub const CHUNK_VOL: usize = CHUNK_SIZE.pow(3);
 pub const CHUNK_IDX: u8 = CHUNK_SIZE as u8 - 1;
 
-// chunk cursor offsets for array traversal
-pub const Y_INC: usize = CHUNK_SIZE * CHUNK_SIZE;
-pub const Z_INC: usize = Y_INC * CHUNK_SIZE;
-pub const Y_INC_IDX: usize = Y_INC - 1;
-pub const Z_INC_IDX: usize = Z_INC - 1;
+// flat block array strides for one step along each axis
+pub const Y_STRIDE: usize = CHUNK_SIZE;
+pub const Z_STRIDE: usize = CHUNK_SIZE * CHUNK_SIZE;

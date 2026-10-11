@@ -64,7 +64,7 @@ impl<'a> ChunkCursor<'a> {
 
     pub fn block_above(&self) -> Option<BlockType> {
         if self.pos.y < CHUNK_IDX {
-            Some(self.blocks[self.index + CHUNK_SIZE])
+            Some(self.blocks[self.index + Y_STRIDE])
         } else {
             None
         }
@@ -72,7 +72,7 @@ impl<'a> ChunkCursor<'a> {
 
     pub fn block_below(&self) -> Option<BlockType> {
         if self.pos.y > 0 {
-            Some(self.blocks[self.index - CHUNK_SIZE])
+            Some(self.blocks[self.index - Y_STRIDE])
         } else {
             None
         }
@@ -96,7 +96,7 @@ impl<'a> ChunkCursor<'a> {
 
     pub fn block_front(&self) -> Option<BlockType> {
         if self.pos.z < CHUNK_IDX {
-            Some(self.blocks[self.index + Y_INC])
+            Some(self.blocks[self.index + Z_STRIDE])
         } else {
             None
         }
@@ -104,7 +104,7 @@ impl<'a> ChunkCursor<'a> {
 
     pub fn block_back(&self) -> Option<BlockType> {
         if self.pos.z > 0 {
-            Some(self.blocks[self.index - Y_INC])
+            Some(self.blocks[self.index - Z_STRIDE])
         } else {
             None
         }
@@ -174,7 +174,7 @@ impl<'a> ChunkCursor<'a> {
     }
 
     pub fn advance(&mut self) -> bool {
-        if self.index >= Z_INC_IDX {
+        if self.index >= CHUNK_VOL - 1 {
             return false;
         }
 
