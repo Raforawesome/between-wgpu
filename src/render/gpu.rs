@@ -181,12 +181,8 @@ impl Gpu {
             CurrentSurfaceTexture::Timeout
             | CurrentSurfaceTexture::Validation
             | CurrentSurfaceTexture::Occluded => None,
-            CurrentSurfaceTexture::Outdated => {
-                // reconfigure outdated configuration then skip frame
-                self.surface.configure(&self.device, &self.config);
-                None
-            }
-            CurrentSurfaceTexture::Lost => {
+            CurrentSurfaceTexture::Outdated | CurrentSurfaceTexture::Lost => {
+                // reconfigure the surface then skip frame
                 self.surface.configure(&self.device, &self.config);
                 None
             }
