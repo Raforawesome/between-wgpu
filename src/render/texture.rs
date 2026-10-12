@@ -10,10 +10,15 @@ use crate::{constants::CHUNK_SIZEU, render::gpu::Gpu, world::block::BlockType};
 pub struct Texture {
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,
+}
+
+/// A texture sampled in shaders. Depth and block-id textures are read directly and need no sampler.
+pub struct SampledTexture {
+    pub texture: Texture,
     pub sampler: wgpu::Sampler,
 }
 
-impl Texture {
+impl SampledTexture {
     /// Convenience method to create the default texture array for the game
     pub fn create_texture_array(gpu: &Gpu) -> Self {
         let bytes_grass_top = include_bytes!("../../assets/game/grass.png");
@@ -121,8 +126,10 @@ impl Texture {
         });
 
         Ok(Self {
-            texture: diffuse_tex,
-            view,
+            texture: Texture {
+                texture: diffuse_tex,
+                view,
+            },
             sampler,
         })
     }
@@ -162,7 +169,7 @@ impl Texture {
         [
             BindGroupEntry {
                 binding: 0,
-                resource: BindingResource::TextureView(&self.view),
+                resource: BindingResource::TextureView(&self.texture.view),
             },
             BindGroupEntry {
                 binding: 1,
@@ -170,7 +177,9 @@ impl Texture {
             },
         ]
     }
+}
 
+impl Texture {
     pub const fn blocks_layout_desc() -> wgpu::BindGroupLayoutDescriptor<'static> {
         wgpu::BindGroupLayoutDescriptor {
             entries: &[
@@ -218,13 +227,8 @@ impl Texture {
         });
 
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let sampler = gpu.create_nearest_sampler();
 
-        Self {
-            texture,
-            view,
-            sampler,
-        }
+        Self { texture, view }
     }
 
     pub fn create_blocks_texture(gpu: &Gpu, blocks: &[BlockType]) -> Self {
@@ -262,13 +266,8 @@ impl Texture {
         );
 
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let sampler = gpu.create_nearest_sampler();
 
-        Self {
-            texture,
-            view,
-            sampler,
-        }
+        Self { texture, view }
     }
 }
 
@@ -276,7 +275,7 @@ impl Texture {
 impl Gpu {
     pub fn create_texture_bind_group(
         &self,
-        texture: &Texture,
+        texture: &SampledTexture,
         layout: &wgpu::BindGroupLayout,
     ) -> wgpu::BindGroup {
         let device = &self.device;
@@ -285,21 +284,6 @@ impl Gpu {
             layout,
             entries: &texture.bind_entries(),
             label: Some("diffuse_bind_group"),
-        })
-    }
-
-    pub fn create_nearest_sampler(&self) -> wgpu::Sampler {
-        self.device.create_sampler(&wgpu::SamplerDescriptor {
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Nearest,
-            min_filter: wgpu::FilterMode::Nearest,
-            mipmap_filter: wgpu::MipmapFilterMode::Nearest,
-            compare: Some(wgpu::CompareFunction::LessEqual),
-            lod_min_clamp: 0.0,
-            lod_max_clamp: 100.0,
-            ..Default::default()
         })
     }
 }
