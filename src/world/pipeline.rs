@@ -78,12 +78,6 @@ impl ChunkGenPipeline {
         }
     }
 
-    pub fn request(&self, task: PipelineTask) {
-        self.request_tx
-            .send(task)
-            .expect("Chunk channel shut down!");
-    }
-
     pub fn request_generate(&self, coords: IVec3) {
         self.request_tx
             .send(PipelineTask::Generate(GenTask(coords)))
