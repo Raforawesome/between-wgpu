@@ -7,7 +7,6 @@ use crate::{
 
 pub mod interpolate;
 pub mod layered;
-pub mod simplex;
 
 /// A trait which represents any struct that lets you sample a density value
 /// for an (x, y, z) coordinate. This could be a generator or an interpolator
