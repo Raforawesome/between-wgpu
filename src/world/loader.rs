@@ -1,9 +1,6 @@
 use glam::{IVec3, Vec3};
 
-use crate::{
-    HashSet,
-    constants::{CHUNK_SIZEI, VIEW_DISTANCE, VIEW_DISTANCE_Y},
-};
+use crate::{HashSet, constants::CHUNK_SIZEI};
 
 /// Chunks in the half-open view region around the player.
 pub struct ChunkLoader {
@@ -51,12 +48,6 @@ impl ChunkLoader {
             }
         }
         true
-    }
-}
-
-impl Default for ChunkLoader {
-    fn default() -> Self {
-        Self::new(VIEW_DISTANCE, VIEW_DISTANCE_Y)
     }
 }
 
