@@ -13,13 +13,36 @@ use player::{Player, PlayerController};
 use crate::{
     HashSet,
     render::RenderState,
-    world::pipeline::{ChunkGenPipeline, PipelineResult},
+    world::{
+        chunks::Chunk,
+        pipeline::{ChunkGenPipeline, PipelineResult},
+    },
     worldgen::{interpolate::Trilerp, layered::LayeredGen},
 };
 
 use winit::{event::ElementState, keyboard::KeyCode};
 
 pub type WorldSampler = Trilerp<LayeredGen>;
+
+/// Sends a dirty chunk to be meshed once it and all six of its neighbours are generated.
+fn request_mesh_if_ready(
+    chunk_man: &ChunkManager,
+    chunk_pipeline: &ChunkGenPipeline,
+    dirty: &mut HashSet<IVec3>,
+    pos: IVec3,
+) {
+    if !dirty.contains(&pos) {
+        return;
+    }
+    let (Some(chunk), Some(neighbours)) = (
+        chunk_man.get_chunk(&pos),
+        chunk_man.neighbour_snapshot(&pos),
+    ) else {
+        return;
+    };
+    chunk_pipeline.request_mesh(chunk.clone(), neighbours);
+    dirty.remove(&pos);
+}
 
 /// Holds state for the game world, such as chunks and the player.
 /// This is kept separate from the [RenderState].
@@ -31,16 +54,6 @@ pub struct WorldState {
     pub chunk_pipeline: ChunkGenPipeline,
     pub queued: HashSet<IVec3>,
     pub dirty: HashSet<IVec3>,
-}
-
-impl Default for WorldState {
-    fn default() -> Self {
-        Self::new(
-            42,
-            crate::constants::VIEW_DISTANCE,
-            crate::constants::VIEW_DISTANCE_Y,
-        )
-    }
 }
 
 impl WorldState {
@@ -152,34 +165,6 @@ impl WorldState {
                         }
                     }
                 }
-            }
-        }
-
-        // queue all dirty chunks that are able to be meshed
-        self.dirty.retain(|pos| {
-            let Some(chunk) = self.chunk_man.get_chunk(pos) else {
-                return true;
-            };
-            let Some(neighbours) = self.chunk_man.neighbour_snapshot(pos) else {
-                return true;
-            };
-            self.chunk_pipeline.request_mesh(chunk.clone(), neighbours);
-            false
-        });
-
-        // send necessary chunks through the gen & meshing pipeline
-        for chunk_pos in self.loader.loaded_chunks() {
-            if render_state.has_chunk_buffer(chunk_pos) {
-                continue;
-            }
-
-            if render_state.restore_chunk_buffer_from_cache(chunk_pos) {
-                continue;
-            }
-
-            // make sure chunk isn't already in-flight
-            if self.queued.insert(*chunk_pos) {
-                self.chunk_pipeline.request_generate(*chunk_pos);
             }
         }
     }
