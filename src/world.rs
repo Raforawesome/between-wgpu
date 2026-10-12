@@ -74,16 +74,58 @@ impl WorldState {
             // Membership only changes when the player crosses a chunk boundary.
             render_state.cache_chunks_outside_view(&self.loader);
             self.queued.retain(|pos| self.loader.contains(pos));
+            self.dirty.retain(|pos| self.loader.contains(pos));
+
+            // send newly visible chunks through the gen & meshing pipeline
+            for &chunk_pos in self.loader.loaded_chunks() {
+                if render_state.has_chunk_buffer(&chunk_pos)
+                    || render_state.restore_chunk_buffer_from_cache(&chunk_pos)
+                {
+                    continue;
+                }
+
+                // make sure chunk isn't already in-flight
+                if !self.queued.insert(chunk_pos) {
+                    continue;
+                }
+
+                if self.chunk_man.get_chunk(&chunk_pos).is_some() {
+                    // block data outlived the cached mesh, so only remeshing is needed
+                    self.dirty.insert(chunk_pos);
+                    request_mesh_if_ready(
+                        &self.chunk_man,
+                        &self.chunk_pipeline,
+                        &mut self.dirty,
+                        chunk_pos,
+                    );
+                } else {
+                    self.chunk_pipeline.request_generate(chunk_pos);
+                }
+            }
         }
 
-        // process results first to allow dirty chunks to be re-queued in the same frame
-        // and to remove empty meshes from the gpu world
+        // remove empty meshes from the gpu world and upload new ones
         for pipeline_result in self.chunk_pipeline.result_channel().try_iter() {
             match pipeline_result {
                 PipelineResult::Generate(chunk) => {
                     let coords = chunk.coords();
                     self.chunk_man.insert_chunk(*chunk);
-                    self.dirty.insert(coords);
+                    if self.loader.contains(&coords) {
+                        self.dirty.insert(coords);
+                    }
+
+                    // a new chunk can complete its own neighbourhood and those of its neighbours
+                    for pos in [coords]
+                        .into_iter()
+                        .chain(Chunk::neighbours_pos_list_at(coords))
+                    {
+                        request_mesh_if_ready(
+                            &self.chunk_man,
+                            &self.chunk_pipeline,
+                            &mut self.dirty,
+                            pos,
+                        );
+                    }
                 }
                 PipelineResult::Mesh(coords, mesh_data) => {
                     // if mesh is empty
