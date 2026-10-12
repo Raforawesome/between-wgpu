@@ -7,7 +7,7 @@ pub mod vertex;
 use camera::Camera;
 use glam::{IVec3, Vec3};
 use gpu::Gpu;
-use texture::Texture;
+use texture::{SampledTexture, Texture};
 use vertex::Vertex;
 
 use wgpu::{Buffer, PipelineCompilationOptions};
@@ -83,10 +83,10 @@ impl RenderState {
         let gpu = Gpu::new(window).await?;
 
         // set up texture array & texture bind group
-        let texture_array = Texture::create_texture_array(&gpu);
+        let texture_array = SampledTexture::create_texture_array(&gpu);
         let tex_group_layout = gpu
             .device
-            .create_bind_group_layout(&Texture::tex_layout_desc());
+            .create_bind_group_layout(&SampledTexture::tex_layout_desc());
         let diffuse_bind_group = gpu.create_texture_bind_group(&texture_array, &tex_group_layout);
         let blocks_group_layout = gpu
             .device
@@ -128,108 +128,64 @@ impl RenderState {
          */
         let depth_texture = Texture::create_depth_texture(&gpu);
 
-        // normal render pipeline (non-wireframe)
-        let render_pipeline = gpu
-            .device
-            .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some("between render pipeline"),
-                layout: Some(&pipeline_layout),
-                // set up vertex shader entry point
-                vertex: wgpu::VertexState {
-                    module: &shader,
-                    entry_point: Some("vs_main"),
-                    buffers: &[Vertex::buffer_layout()],
-                    compilation_options: PipelineCompilationOptions::default(),
-                },
-                // set up fragment shader entry point
-                fragment: Some(wgpu::FragmentState {
-                    module: &shader,
-                    entry_point: Some("fs_main"),
-                    targets: &[Some(wgpu::ColorTargetState {
-                        format: gpu.config.format,
-                        blend: Some(wgpu::BlendState::REPLACE),
-                        write_mask: wgpu::ColorWrites::ALL,
-                    })],
-                    compilation_options: PipelineCompilationOptions::default(),
-                }),
-                // define how vertex data is interpreted
-                primitive: wgpu::PrimitiveState {
-                    topology: wgpu::PrimitiveTopology::TriangleList,
-                    strip_index_format: None,
-                    front_face: wgpu::FrontFace::Ccw,
-                    cull_mode: Some(wgpu::Face::Back),
-                    polygon_mode: wgpu::PolygonMode::Fill,
-                    unclipped_depth: false,
-                    conservative: false,
-                },
-                // z-buffer
-                depth_stencil: Some(wgpu::DepthStencilState {
-                    format: Texture::DEPTH_FORMAT,
-                    depth_write_enabled: Some(true),
-                    depth_compare: Some(wgpu::CompareFunction::GreaterEqual),
-                    stencil: wgpu::StencilState::default(),
-                    bias: wgpu::DepthBiasState::default(),
-                }),
-                multisample: wgpu::MultisampleState {
-                    count: 1,
-                    mask: !0,
-                    alpha_to_coverage_enabled: false,
-                },
-                cache: None,          // not useful for this project
-                multiview_mask: None, // not useful for this project
-            });
+        // the wireframe view differs from the normal view only in polygon mode
+        let create_pipeline = |label, polygon_mode| {
+            gpu.device
+                .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                    label: Some(label),
+                    layout: Some(&pipeline_layout),
+                    // set up vertex shader entry point
+                    vertex: wgpu::VertexState {
+                        module: &shader,
+                        entry_point: Some("vs_main"),
+                        buffers: &[Vertex::buffer_layout()],
+                        compilation_options: PipelineCompilationOptions::default(),
+                    },
+                    // set up fragment shader entry point
+                    fragment: Some(wgpu::FragmentState {
+                        module: &shader,
+                        entry_point: Some("fs_main"),
+                        targets: &[Some(wgpu::ColorTargetState {
+                            format: gpu.config.format,
+                            blend: Some(wgpu::BlendState::REPLACE),
+                            write_mask: wgpu::ColorWrites::ALL,
+                        })],
+                        compilation_options: PipelineCompilationOptions::default(),
+                    }),
+                    // define how vertex data is interpreted
+                    primitive: wgpu::PrimitiveState {
+                        topology: wgpu::PrimitiveTopology::TriangleList,
+                        strip_index_format: None,
+                        front_face: wgpu::FrontFace::Ccw,
+                        cull_mode: Some(wgpu::Face::Back),
+                        polygon_mode,
+                        unclipped_depth: false,
+                        conservative: false,
+                    },
+                    // z-buffer
+                    depth_stencil: Some(wgpu::DepthStencilState {
+                        format: Texture::DEPTH_FORMAT,
+                        depth_write_enabled: Some(true),
+                        depth_compare: Some(wgpu::CompareFunction::GreaterEqual),
+                        stencil: wgpu::StencilState::default(),
+                        bias: wgpu::DepthBiasState::default(),
+                    }),
+                    multisample: wgpu::MultisampleState {
+                        count: 1,
+                        mask: !0,
+                        alpha_to_coverage_enabled: false,
+                    },
+                    cache: None,          // not useful for this project
+                    multiview_mask: None, // not useful for this project
+                })
+        };
 
-        // create render pipeline for wireframe view
+        let render_pipeline = create_pipeline("between render pipeline", wgpu::PolygonMode::Fill);
         let wireframe_pipeline = gpu
             .device
             .features()
             .contains(wgpu::Features::POLYGON_MODE_LINE)
-            .then(|| {
-                gpu.device
-                    .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                        label: Some("between wireframe pipeline"),
-                        layout: Some(&pipeline_layout),
-                        vertex: wgpu::VertexState {
-                            module: &shader,
-                            entry_point: Some("vs_main"),
-                            buffers: &[Vertex::buffer_layout()],
-                            compilation_options: PipelineCompilationOptions::default(),
-                        },
-                        fragment: Some(wgpu::FragmentState {
-                            module: &shader,
-                            entry_point: Some("fs_main"),
-                            targets: &[Some(wgpu::ColorTargetState {
-                                format: gpu.config.format,
-                                blend: Some(wgpu::BlendState::REPLACE),
-                                write_mask: wgpu::ColorWrites::ALL,
-                            })],
-                            compilation_options: PipelineCompilationOptions::default(),
-                        }),
-                        primitive: wgpu::PrimitiveState {
-                            topology: wgpu::PrimitiveTopology::TriangleList,
-                            strip_index_format: None,
-                            front_face: wgpu::FrontFace::Ccw,
-                            cull_mode: Some(wgpu::Face::Back),
-                            polygon_mode: wgpu::PolygonMode::Line,
-                            unclipped_depth: false,
-                            conservative: false,
-                        },
-                        depth_stencil: Some(wgpu::DepthStencilState {
-                            format: Texture::DEPTH_FORMAT,
-                            depth_write_enabled: Some(true),
-                            depth_compare: Some(wgpu::CompareFunction::GreaterEqual),
-                            stencil: wgpu::StencilState::default(),
-                            bias: wgpu::DepthBiasState::default(),
-                        }),
-                        multisample: wgpu::MultisampleState {
-                            count: 1,
-                            mask: !0,
-                            alpha_to_coverage_enabled: false,
-                        },
-                        cache: None,
-                        multiview_mask: None,
-                    })
-            });
+            .then(|| create_pipeline("between wireframe pipeline", wgpu::PolygonMode::Line));
 
         Ok(Self {
             is_surface_configured: true,
