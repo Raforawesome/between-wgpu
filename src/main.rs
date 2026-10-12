@@ -21,18 +21,6 @@ pub struct App {
     frame_times: Vec<f32>,
 }
 
-impl Default for App {
-    fn default() -> Self {
-        Self {
-            render_state: None,
-            game_state: WorldState::default(),
-            last_frame: Instant::now(),
-            stats_start: Instant::now(),
-            frame_times: Vec::with_capacity(240),
-        }
-    }
-}
-
 impl ApplicationHandler<RenderState> for App {
     /// Called when the application is resumed and the window is created.
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
@@ -136,7 +124,7 @@ fn main() -> anyhow::Result<()> {
     env_logger::init();
 
     if let Err(e) = set_current_thread_priority(thread_priority::ThreadPriority::Max) {
-        println!("Error: failed to set current main priority.\n{e}");
+        log::warn!("failed to set main thread priority: {e}");
     }
 
     let Some(config) = between_wgpu::config::Config::parse(std::env::args().skip(1))? else {
