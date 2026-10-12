@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use glam::{IVec3, U8Vec3};
+use glam::IVec3;
 
-use crate::{HashMap, constants::CHUNK_SIZEI, world::chunks::Chunk};
+use crate::{HashMap, world::chunks::Chunk};
 
 #[derive(Default)]
 pub struct ChunkManager {
@@ -30,26 +30,12 @@ impl ChunkManager {
         Self::default()
     }
 
-    pub fn world_to_chunk_coords(world_pos: IVec3) -> (IVec3, U8Vec3) {
-        let chunk_coords = world_pos.div_euclid(IVec3::splat(CHUNK_SIZEI));
-        let local_pos = world_pos.rem_euclid(IVec3::splat(CHUNK_SIZEI)).as_u8vec3();
-        (chunk_coords, local_pos)
-    }
-
     pub fn insert_chunk(&mut self, chunk: Chunk) {
         self.chunk_map.insert(chunk.coords(), Arc::new(chunk));
     }
 
     pub fn get_chunk(&self, chunk_coords: &IVec3) -> Option<&Arc<Chunk>> {
         self.chunk_map.get(chunk_coords)
-    }
-
-    pub fn get_chunk_mut(&mut self, chunk_coords: &IVec3) -> Option<&mut Arc<Chunk>> {
-        self.chunk_map.get_mut(chunk_coords)
-    }
-
-    pub fn chunk_snapshot(&self, chunk_coords: &IVec3) -> Option<Arc<Chunk>> {
-        self.chunk_map.get(chunk_coords).cloned()
     }
 
     pub fn neighbour_snapshot(&self, chunk_coords: &IVec3) -> Option<NeighbourSnapshot> {
@@ -69,9 +55,5 @@ impl ChunkManager {
             front: Arc::clone(front),
             back: Arc::clone(back),
         })
-    }
-
-    pub fn chunk_iter(&self) -> impl Iterator<Item = (&IVec3, &Arc<Chunk>)> {
-        self.chunk_map.iter()
     }
 }
