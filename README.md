@@ -6,7 +6,7 @@ A voxel terrain engine built in Rust with wgpu and Slang shaders. It explores ho
 
 ## Run
 
-Requires **Rust 1.94+** and **Slang 2026.5.2** (`slangc` on PATH). Download Slang for your platform from its [official release](https://github.com/shader-slang/slang/releases/tag/v2026.5.2); alternatively set `SLANGC=/absolute/path/to/slangc`. The build compiles the Slang sources to WGSL. No nightly compiler is needed.
+Requires a **nightly Rust toolchain (1.94+)** and **Slang 2026.5.2** (`slangc` on PATH). Download Slang for your platform from its [official release](https://github.com/shader-slang/slang/releases/tag/v2026.5.2); alternatively set `SLANGC=/absolute/path/to/slangc`. The build compiles the Slang sources to WGSL. Nightly is required because `rapidhash` is built with its `nightly` feature.
 
 ```sh
 cargo run --release --locked -- --seed 42 --view-distance 8 --vertical-distance 4
@@ -28,15 +28,17 @@ The title bar reports frame-interval p50/p95 over the last second, submitted/res
 ## Engineering highlights
 
 - **Terrain workers:** `WorldState` owns chunk storage, loading, and the queued/dirty sets; worker threads generate chunks and mesh immutable snapshots. Requests and results use unbounded channels.
+- **Generation speed:** noise is sampled on a 5³ grid and trilinearly interpolated into each 16³ chunk, about 9× faster than per-voxel noise. A chunk generates in about 18 µs, scaling about 4× on 4 threads.
+- **Frame rate:** about 240 FPS median uncapped on an Apple M2 at 3000×1800 with the default 32×12×32 view (4.0 ms p50, 7.6 ms p95); 60 FPS under the shipped vsync. Frustum culling cuts triangles about 4× (a ~16% frame-rate gain).
 - **GPU cache:** recently visible meshes are retained in an LRU with both a 2,048-entry cap and a 64 MiB payload budget.
 - **Visibility:** neighbour-aware hidden-face removal plus conservative chunk-AABB frustum culling compatible with infinite reversed Z. Only resident nonempty GPU meshes are considered for drawing.
 - **Compact data:** flat 4,096-byte voxel arrays, non-air occupancy masks, four-byte packed vertices, indexed triangles, texture arrays, and per-chunk block-volume textures.
-- **Procedural terrain:** seeded layered noise and trilinear interpolation from a 5³ sampling grid into each 16³ chunk.
-- **Validation:** independent meshing and clip-space culling oracles, loader and worker-pipeline tests, repeatable CPU benchmarks, and CI for formatting, Clippy, tests, and shader compilation.
+- **Procedural terrain:** seeded layered noise (continentalness, erosion, peaks and valleys, near-surface 3D detail).
+- **Validation:** unit tests for the chunk loader and the LRU cache, plus repeatable CPU benchmarks.
 
-In a historical capture made with the separate terrain scheduler, culling submitted **64 of 365** nonempty chunk meshes. This is a draw-count observation from that earlier implementation, not an FPS speedup or a measurement of the current implementation. See [performance and reproduction details](docs/performance.md).
+The numbers above are measured on an Apple M2; see the [performance report](docs/performance.md) for methodology, results, and caveats. Figures other than the frame rate are CPU-only.
 
-[Architecture](docs/architecture.md) · [Application plan and interview notes](docs/application-plan.md) · [Wireframe screenshot](assets/showcase/wireframe.png)
+[Wireframe screenshot](assets/showcase/wireframe.png)
 
 ## Verify
 
@@ -44,17 +46,18 @@ In a historical capture made with the separate terrain scheduler, culling submit
 cargo fmt --all -- --check
 cargo clippy --locked --all-targets -- -D warnings
 cargo test --locked
-cargo bench --locked --bench engine
+cargo bench --locked --bench engine   # CPU benchmarks
+cargo bench --locked --bench frames   # frame times; opens a window
 ```
 
-The benchmark needs no window or GPU, but Slang is still required by the build. CPU tests and visual smoke checks were run on macOS 26.5.1, Apple M2 / Metal. The Linux GitHub Actions workflow is provided; a hosted CI run has not yet been observed.
+The `engine` benchmark needs no window or GPU and rewrites [docs/benchmarks/latest.md](docs/benchmarks/latest.md); `frames` needs a display, rewrites [docs/benchmarks/frames.md](docs/benchmarks/frames.md), and must stay visible while it runs. Slang is still required by the build. There is no CI configured.
 
 ## Scope and next experiments
 
 This is an engine prototype with free flight. Meshing emits visible unit faces; it is not greedy meshing. Face lighting is a fixed artistic approximation. Water uses the opaque pass. Collision, block editing, persistence, transparent water, LOD, and shadows are not implemented. Generation is reproducible within the tested build; cross-platform bit-identical terrain is not guaranteed.
 
-CPU chunks currently remain stored during travel. Scheduling and uploads have no per-frame budgets, and generation covers the render region without a neighbour halo, so stationary boundary chunks can remain unmeshed. These are limitations of the original `WorldState` update loop.
+CPU chunks currently remain stored during travel, and generation covers the render region without a neighbour halo, so stationary boundary chunks can remain unmeshed.
 
-Next: record a short narrated flythrough, profile the same camera route in release mode, then evaluate greedy meshing or material IDs in vertices against this baseline. The [application plan](docs/application-plan.md) explains what to measure before making a resume claim.
+Next: optimize chunk meshing (greedy meshing or material IDs in vertices) and compare against the baseline in the [performance report](docs/performance.md).
 
 Runtime images are embedded from `assets/game`; `assets/raw` holds editable source artwork. Log and leaf layers currently reuse placeholder textures.
