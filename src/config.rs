@@ -40,12 +40,12 @@ impl Config {
             }
         }
         anyhow::ensure!(
-            (1..=32).contains(&config.view),
-            "view distance must be 1..=32 chunks"
+            (1..=128).contains(&config.view),
+            "view distance must be 1..=128 chunks"
         );
         anyhow::ensure!(
-            (1..=16).contains(&config.height),
-            "vertical distance must be 1..=16 chunks"
+            (1..=32).contains(&config.height),
+            "vertical distance must be 1..=32 chunks"
         );
         Ok(Some(config))
     }

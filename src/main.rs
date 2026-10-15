@@ -129,7 +129,7 @@ fn main() -> anyhow::Result<()> {
 
     let Some(config) = between_wgpu::config::Config::parse(std::env::args().skip(1))? else {
         println!(
-            "Between: cargo run --release -- [--seed I32] [--view-distance 1..32] [--vertical-distance 1..16]\nChunk offsets run from -distance (inclusive) to +distance (exclusive).\nWASD: fly, mouse: look, Space/E: up, Ctrl/Q: down, Shift: sprint, P: wireframe, C: culling, Esc: quit"
+            "Between: cargo run --release -- [--seed I32] [--view-distance 1..128] [--vertical-distance 1..32]\nChunk offsets run from -distance (inclusive) to +distance (exclusive).\nWASD: fly, mouse: look, Space/E: up, Ctrl/Q: down, Shift: sprint, P: wireframe, C: culling, Esc: quit"
         );
         return Ok(());
     };

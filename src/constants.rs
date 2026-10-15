@@ -16,7 +16,7 @@ const _: () = assert!(CHUNK_SIZE == 16);
 pub type ChunkMask = [[u16; CHUNK_SIZE]; CHUNK_SIZE];
 
 // chunk rendering pipeline settings
-pub const VIEW_DISTANCE: i32 = 16;
+pub const VIEW_DISTANCE: i32 = 32;
 pub const VIEW_DISTANCE_Y: i32 = 6;
 
 /*
