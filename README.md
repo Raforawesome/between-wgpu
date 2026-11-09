@@ -1,8 +1,12 @@
 # Between
 
+[![CI](https://github.com/Raforawesome/between-wgpu/actions/workflows/ci.yml/badge.svg)](https://github.com/Raforawesome/between-wgpu/actions/workflows/ci.yml)
+
 A voxel terrain engine built in Rust with wgpu and Slang shaders. It explores how procedural terrain moves from a density field through worker threads into compact GPU geometry.
 
 ![Seed 42 terrain rendered by Between on Apple M2 / Metal](assets/showcase/terrain.png)
+
+A walkthrough of the main optimizations, with animations, is in [this thread on X](https://x.com/raforawesome/status/2114935770566062370).
 
 ## Run
 
@@ -27,14 +31,41 @@ The title bar reports frame-interval p50/p95 over the last second, submitted/res
 
 ## Engineering highlights
 
-- **Terrain workers:** `WorldState` owns chunk storage, loading, and the queued/dirty sets; worker threads generate chunks and mesh immutable snapshots. Requests and results use unbounded channels.
-- **Generation speed:** noise is sampled on a 5³ grid and trilinearly interpolated into each 16³ chunk, about 9× faster than per-voxel noise. A chunk generates in about 18 µs, scaling about 4× on 4 threads.
-- **Frame rate:** about 240 FPS median uncapped on an Apple M2 at 3000×1800 with the default 32×12×32 view (4.0 ms p50, 7.6 ms p95); 60 FPS under the shipped vsync. Frustum culling cuts triangles about 4× (a ~16% frame-rate gain).
+### Lock-free terrain workers
+
+`WorldState` owns chunk storage, loading, and the queued/dirty sets. Four persistent worker threads pull generate or mesh jobs off a shared crossbeam channel and send results back. Meshing jobs carry immutable snapshots of the chunk's neighbours, so workers never need locks. Generation scales 4.2× on 4 threads; 8 threads reach 5.9× (74% efficiency), likely held back by the M2's 4 performance + 4 efficiency cores. The full default view (12,288 chunks) generates and meshes in 78 ms, so flying into new terrain costs about the same as standing still.
+
+### Trilinear density interpolation
+
+<img src="assets/showcase/concepts/trilinear.gif" width="720" alt="Animation comparing noise sampled at every voxel with a coarse grid filled by trilinear interpolation">
+
+Instead of evaluating noise at all 4,096 voxels of a 16³ chunk, the generator samples a 5³ grid and fills the rest with trilinear interpolation: 186 → 20 µs per chunk (9.4×). Only 0.11% of voxels change block type, all of them at the surface.
+
+### Cache-friendly iteration
+
+<img src="assets/showcase/concepts/cache_iteration.gif" width="720" alt="Animation of z-innermost versus x-innermost loops walking a chunk array">
+
+Chunks are flat 4 KB arrays laid out x → y → z. With z innermost, every step jumped 256 elements; making z the outer loop and x the inner one walks memory in a straight line, so the hardware prefetcher stays ahead and the compiler can auto-vectorize.
+
+### 32-bit packed vertices
+
+<img src="assets/showcase/concepts/vertex_packing.gif" width="720" alt="Animation of the bit layout of a packed 32-bit vertex">
+
+Each vertex is a single `u32` instead of a typical 32-byte float vertex, 8× less vertex memory and bandwidth: 5 bits each for x, y, z within the chunk (the vertex shader adds the world offset), 2 bits of UV corner, 3 bits of face, and 12 spare. There is no normal (the face implies it) and no block type: the fragment shader looks that up in a per-chunk 16³ block-volume texture.
+
+### Hidden-face removal and culling
+
+<img src="assets/showcase/concepts/face_culling.gif" width="720" alt="Animation of hidden faces being removed from a block of voxels">
+
+Workers check each block's neighbours, across chunk borders via the immutable snapshots, and skip faces that can't be seen: 78k faces emitted versus 15.8M at 6 per solid voxel, 99.5% removed. Conservative chunk-AABB frustum culling, compatible with infinite reversed Z, then cuts submitted triangles about 4×.
+
+### Also
+
+- **Frame rate:** about 240 FPS median uncapped on an Apple M2 at 3000×1800 with the default 32×12×32 view (4.0 ms p50, 7.6 ms p95); 60 FPS under the shipped vsync. Frustum culling is worth about 16% in frame rate.
 - **GPU cache:** recently visible meshes are retained in an LRU with both a 2,048-entry cap and a 64 MiB payload budget.
-- **Visibility:** neighbour-aware hidden-face removal plus conservative chunk-AABB frustum culling compatible with infinite reversed Z. Only resident nonempty GPU meshes are considered for drawing.
-- **Compact data:** flat 4,096-byte voxel arrays, non-air occupancy masks, four-byte packed vertices, indexed triangles, texture arrays, and per-chunk block-volume textures.
+- **Compact data:** flat 4,096-byte voxel arrays, non-air occupancy masks, indexed triangles, and texture arrays.
 - **Procedural terrain:** seeded layered noise (continentalness, erosion, peaks and valleys, near-surface 3D detail).
-- **Validation:** unit tests for the chunk loader and the LRU cache, plus repeatable CPU benchmarks.
+- **Validation:** unit tests for the chunk loader and the LRU cache, repeatable CPU benchmarks, and CI running fmt, clippy, and tests.
 
 The numbers above are measured on an Apple M2; see the [performance report](docs/performance.md) for methodology, results, and caveats. Figures other than the frame rate are CPU-only.
 
