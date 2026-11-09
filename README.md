@@ -50,7 +50,7 @@ cargo bench --locked --bench engine   # CPU benchmarks
 cargo bench --locked --bench frames   # frame times; opens a window
 ```
 
-The `engine` benchmark needs no window or GPU and rewrites [docs/benchmarks/latest.md](docs/benchmarks/latest.md); `frames` needs a display, rewrites [docs/benchmarks/frames.md](docs/benchmarks/frames.md), and must stay visible while it runs. Slang is still required by the build. There is no CI configured.
+The `engine` benchmark needs no window or GPU and rewrites [docs/benchmarks/latest.md](docs/benchmarks/latest.md); `frames` needs a display, rewrites [docs/benchmarks/frames.md](docs/benchmarks/frames.md), and must stay visible while it runs. Slang is still required by the build. CI runs the fmt, clippy, and test steps on every push.
 
 ## Scope and next experiments
 
@@ -61,3 +61,7 @@ CPU chunks currently remain stored during travel, and generation covers the rend
 Next: optimize chunk meshing (greedy meshing or material IDs in vertices) and compare against the baseline in the [performance report](docs/performance.md).
 
 Runtime images are embedded from `assets/game`; `assets/raw` holds editable source artwork. Log and leaf layers currently reuse placeholder textures.
+
+## License
+
+The source code is licensed under the [GNU GPL v3.0](LICENSE). The artwork in `assets/` is licensed under [CC BY-SA 4.0](LICENSE-ASSETS), except the third-party Colorful-42 palette (`assets/raw/colorful-42.gpl`).

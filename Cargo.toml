@@ -3,6 +3,10 @@ name = "between-wgpu"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.94"
+description = "A voxel terrain engine built with wgpu and Slang shaders"
+license = "GPL-3.0-only"
+readme = "README.md"
+repository = "https://github.com/Raforawesome/between-wgpu"
 
 [dependencies]
 anyhow = "1.0.102"
