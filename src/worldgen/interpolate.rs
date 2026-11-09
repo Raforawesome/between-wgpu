@@ -59,6 +59,7 @@ impl<S: DensitySampler> DensitySampler for Trilerp<S> {
         self.0.sample_density(x, y, z)
     }
 
+    // Simple passthrough function, interpolation shouldn't affect block type calculations.
     fn density_to_block_type(&self, density: f32, y: f32) -> BlockType {
         self.0.density_to_block_type(density, y)
     }

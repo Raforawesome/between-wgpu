@@ -1,7 +1,7 @@
 use crate::world::block::BlockType;
 use noise_functions::Noise;
 
-pub const SEA_LEVEL: f32 = 72.0;
+pub const SEA_LEVEL: f32 = 71.0;
 
 #[derive(Clone)]
 pub struct LayeredGen {
