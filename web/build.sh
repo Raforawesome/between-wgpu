@@ -8,6 +8,11 @@ set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 out="${1:-$here/dist}"
 
+# Keep this machine's home directory out of the compiled wasm (it would
+# otherwise embed paths like /home/you/.cargo/... in panic messages).
+remap="--remap-path-prefix=$HOME=~"
+[[ " ${RUSTFLAGS:-} " == *" $remap "* ]] || export RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }$remap"
+
 cargo build --manifest-path "$here/Cargo.toml" --release --target wasm32-unknown-unknown
 
 mkdir -p "$out"
