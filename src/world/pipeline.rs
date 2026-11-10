@@ -8,6 +8,9 @@ use crate::{
     world::{WorldSampler, chunk_manager::NeighbourSnapshot, chunks::Chunk},
 };
 
+#[cfg(target_arch = "wasm32")]
+mod inline;
+
 /// Wrapper struct which represents a generation task for a given chunk coordinate.
 pub struct GenTask(pub IVec3);
 
@@ -34,9 +37,12 @@ pub enum PipelineResult {
 pub struct ChunkGenPipeline {
     request_tx: Sender<PipelineTask>,
     result_rx: Receiver<PipelineResult>,
+    #[cfg(target_arch = "wasm32")]
+    inline: inline::InlineRunner,
 }
 
 impl ChunkGenPipeline {
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn new(density_sampler: WorldSampler, threads: usize) -> Self {
         assert!(threads > 0, "at least one terrain worker is required");
         let (request_tx, request_rx) = crossbeam_channel::unbounded();
